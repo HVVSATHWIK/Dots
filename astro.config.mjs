@@ -3,6 +3,7 @@
 import { defineConfig } from "astro/config";
 import tailwind from "@astrojs/tailwind";
 import cloudflare from "@astrojs/cloudflare";
+import vercel from "@astrojs/vercel/serverless";
 import wix from "@wix/astro";
 import react from "@astrojs/react";
 import sourceAttrsPlugin from "@wix/babel-plugin-jsx-source-attrs";
@@ -50,7 +51,8 @@ export default defineConfig({
       ...(isBuild ? [nodePolyfills()] : []),
     ],
   },
-  adapter: isBuild ? cloudflare() : undefined,
+  // Use the appropriate adapter per platform: Vercel in Vercel CI, Cloudflare otherwise when building
+  adapter: isBuild ? (process.env.VERCEL ? vercel() : cloudflare()) : undefined,
   devToolbar: {
     enabled: false,
   },

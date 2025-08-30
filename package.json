@@ -13,6 +13,7 @@
     "install-template": "npm i --force --legacy-peer-deps --include=dev --registry=https://registry.npmjs.org"
   },
   "dependencies": {
+  "@astrojs/vercel": "^8.0.6",
     "@astrojs/check": "^0.9.4",
     "@astrojs/cloudflare": "^12.5.3",
     "@astrojs/react": "^4.2.3",
