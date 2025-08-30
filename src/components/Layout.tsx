@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Search, ShoppingCart, User, Menu, X, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,7 @@ export default function Layout({ children }: LayoutProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const location = useLocation();
+  const navigate = useNavigate();
   const { member, isAuthenticated, isLoading, actions } = useMember();
 
   const navigation = [
@@ -122,15 +123,25 @@ export default function Layout({ children }: LayoutProps) {
                   </Button>
                 </div>
               ) : (
-                <Button
-                  onClick={actions.login}
-                  variant="ghost"
-                  size="sm"
-                  className="text-primary-foreground hover:text-neonaccent"
-                >
-                  <User className="w-4 h-4 mr-2" />
-                  Sign In
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={() => navigate('/signup')}
+                    variant="outline"
+                    size="sm"
+                    className="text-primary-foreground border-primary-foreground hover:bg-primary-foreground hover:text-primary"
+                  >
+                    Join DOTS
+                  </Button>
+                  <Button
+                    onClick={() => navigate('/login')}
+                    variant="ghost"
+                    size="sm"
+                    className="text-primary-foreground hover:text-neonaccent"
+                  >
+                    <User className="w-4 h-4 mr-2" />
+                    Sign In
+                  </Button>
+                </div>
               )}
 
               {/* Mobile Menu Button */}
@@ -185,7 +196,7 @@ export default function Layout({ children }: LayoutProps) {
                     {item.name}
                   </Link>
                 ))}
-                {isAuthenticated && (
+                {isAuthenticated ? (
                   <Link
                     to="/profile"
                     className="block text-sm font-paragraph hover:text-neonaccent transition-colors"
@@ -193,6 +204,11 @@ export default function Layout({ children }: LayoutProps) {
                   >
                     Profile
                   </Link>
+                ) : (
+                  <div className="flex items-center gap-2 pt-2">
+                    <Button size="sm" variant="outline" onClick={() => { setIsMenuOpen(false); navigate('/signup'); }}>Join DOTS</Button>
+                    <Button size="sm" variant="ghost" onClick={() => { setIsMenuOpen(false); navigate('/login'); }}>Sign In</Button>
+                  </div>
                 )}
               </nav>
             </div>

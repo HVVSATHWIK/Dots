@@ -1,8 +1,7 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Upload, Star, TrendingUp, Users, Package, ArrowRight, CheckCircle, Camera, FileText, DollarSign } from 'lucide-react';
+import { TrendingUp, Users, Package, ArrowRight, Camera, FileText, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Image } from '@/components/ui/image';
 import { Input } from '@/components/ui/input';
@@ -11,7 +10,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { motion } from 'framer-motion';
 
 export default function SellerPage() {
-  const [activeTab, setActiveTab] = useState('overview');
 
   const benefits = [
     {
@@ -106,10 +104,12 @@ export default function SellerPage() {
                 <Button 
                   size="lg"
                   className="bg-neonaccent text-primary hover:bg-neonaccent/90 font-heading font-bold"
-                  onClick={() => setActiveTab('register')}
+                  asChild
                 >
-                  Start Selling Today
-                  <ArrowRight className="w-5 h-5 ml-2" />
+                  <Link to="/copilot">
+                    Start Selling Today
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </Link>
                 </Button>
                 <Button 
                   size="lg"
@@ -419,8 +419,9 @@ export default function SellerPage() {
             <Button 
               size="lg"
               className="bg-neonaccent text-primary hover:bg-neonaccent/90 font-heading font-bold"
+              asChild
             >
-              Get Started Now
+              <Link to="/copilot">Get Started Now</Link>
             </Button>
             <Button 
               size="lg"

@@ -1,0 +1,9 @@
+.env
+.env.*
+!.env.example
+node_modules
+.astro
+dist
+.vercel
+.netlify
+.DS_Store

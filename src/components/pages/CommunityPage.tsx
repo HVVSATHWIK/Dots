@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { MessageCircle, Heart, Share2, Calendar, User, Search, Filter, Plus } from 'lucide-react';
+import { MessageCircle, Heart, Share2, Calendar, Search, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';

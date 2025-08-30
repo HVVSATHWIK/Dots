@@ -1,4 +1,4 @@
-import { ArrowRight, Heart, Globe, Users, Award, Target } from 'lucide-react';
+import { ArrowRight, Heart, Globe, Users, Award } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Image } from '@/components/ui/image';

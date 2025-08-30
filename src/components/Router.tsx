@@ -13,12 +13,17 @@ import AboutPage from '@/components/pages/AboutPage';
 import ContactPage from '@/components/pages/ContactPage';
 import CartPage from '@/components/pages/CartPage';
 import ProfilePage from '@/components/pages/ProfilePage';
+import ProfileSetupPage from '@/components/pages/ProfileSetupPage';
 import SellerPage from '@/components/pages/SellerPage';
+import CopilotPage from '@/components/pages/CopilotPage';
+import LoginPage from '@/components/pages/LoginPage';
+import SignupPage from '@/components/pages/SignupPage';
+import DashboardPage from '@/components/pages/DashboardPage';
 
 export default function AppRouter() {
   return (
     <MemberProvider>
-      <BrowserRouter basename={import.meta.env.BASE_NAME}>
+  <BrowserRouter basename={import.meta.env.VITE_BASE_NAME ?? '/'}>
         <ScrollToTop />
         <Layout>
           <Routes>
@@ -33,9 +38,18 @@ export default function AppRouter() {
             <Route path="/cart" element={<CartPage />} />
             <Route path="/wishlist" element={<CartPage />} />
             <Route path="/sell" element={<SellerPage />} />
+            <Route path="/copilot" element={<CopilotPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/profile" element={
               <MemberProtectedRoute messageToSignIn="Sign in to access your profile">
                 <ProfilePage />
+              </MemberProtectedRoute>
+            } />
+            <Route path="/profile/setup" element={
+              <MemberProtectedRoute messageToSignIn="Sign in to set up your profile">
+                <ProfileSetupPage />
               </MemberProtectedRoute>
             } />
             <Route path="*" element={<Navigate to="/" replace />} />

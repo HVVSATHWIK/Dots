@@ -1,0 +1,90 @@
+import type { DesignVariationInput, DesignVariationResult, GenerateListingInput, ListingPack } from './types';
+
+const api = import.meta.env.VITE_API_AI_BASE_URL ?? '/api/ai';
+
+function toFormData(obj: Record<string, any>) {
+  const fd = new FormData();
+  Object.entries(obj).forEach(([k, v]) => {
+    if (v == null) return;
+    if (Array.isArray(v)) {
+      v.forEach((iv: any, i: number) => {
+        if (iv instanceof File || iv instanceof Blob) fd.append(`${k}[${i}]`, iv);
+        else fd.append(`${k}[${i}]`, typeof iv === 'object' ? JSON.stringify(iv) : String(iv));
+      });
+    } else if (v instanceof File || v instanceof Blob) fd.append(k, v);
+    else if (typeof v === 'object') fd.append(k, JSON.stringify(v));
+    else fd.append(k, String(v));
+  });
+  return fd;
+}
+
+export async function generateListingPack(input: GenerateListingInput): Promise<ListingPack> {
+  if (api) {
+    const fd = toFormData({
+      languages: input.languages,
+      photoTheme: input.photoTheme,
+      voiceNote: input.voiceNote,
+      images: input.images,
+    });
+    const res = await fetch(`${api}/listing-pack`, { method: 'POST', body: fd });
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`AI API error (${res.status}): ${text.slice(0, 240)}`);
+    }
+    const ct = res.headers.get('content-type') || '';
+    if (!ct.includes('application/json')) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`AI API non-JSON response: ${text.slice(0, 240)}`);
+    }
+    return await res.json();
+  }
+  await new Promise(r => setTimeout(r, 900));
+  return {
+    title: { en: 'Handpainted Madhubani Art – Peacock Motif', hi: 'हैंडपेंटेड मधुबनी कला – मोर आकृति' },
+    description: {
+      en: 'Authentic Madhubani artwork hand-painted on handmade paper using natural pigments. Size: ~16x12 inches.',
+      hi: 'हैंडमेड पेपर पर प्राकृतिक रंगों से बनी असली मधुबनी कलाकृति। आकार ~16x12 इंच।',
+    },
+    tags: ['Madhubani', 'Handmade', 'Traditional', 'Home Décor'],
+    price: { min: 2200, max: 2800, rationale: 'Est. 6–8 hrs labor @ fair wage + materials + margin.' },
+    assets: {
+      cleanedImages: [
+        'https://static.wixstatic.com/media/d7d9fb_77d45693ce2b4e57b7c5311fb3049fde~mv2.png?originWidth=256&originHeight=192',
+      ],
+      poster: 'https://static.wixstatic.com/media/d7d9fb_ad3f9457377f4bc081242fa7abbdcbe9~mv2.png?originWidth=384&originHeight=192',
+    },
+    social: {
+      caption: {
+        en: 'Authentic handpainted Madhubani art. Peacock motif, natural pigments, ~16x12”. DM to order. #Madhubani #Handmade #IndianArt',
+        hi: 'असली हैंडपेंटेड मधुबनी कला। मोर आकृति, प्राकृतिक रंग, ~16x12”. ऑर्डर के लिए DM करें। #Madhubani #Handmade #IndianArt',
+      },
+    },
+    meta: { artisanName: 'Priya Sharma' },
+  };
+}
+
+export async function generateDesignVariations(input: DesignVariationInput): Promise<DesignVariationResult> {
+  if (api) {
+    const fd = toFormData({ baseImage: input.baseImage, prompt: input.prompt });
+    const res = await fetch(`${api}/design-variations`, { method: 'POST', body: fd });
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`AI API error (${res.status}): ${text.slice(0, 240)}`);
+    }
+    const ct = res.headers.get('content-type') || '';
+    if (!ct.includes('application/json')) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`AI API non-JSON response: ${text.slice(0, 240)}`);
+    }
+    return await res.json();
+  }
+  await new Promise(r => setTimeout(r, 700));
+  return {
+    variations: [
+      'https://static.wixstatic.com/media/d7d9fb_6da1e82469934cfb897017b6350736d1~mv2.png?originWidth=1920&originHeight=1024',
+      'https://static.wixstatic.com/media/d7d9fb_a252aa7a948b46c6b4243cff0059d330~mv2.png?originWidth=1920&originHeight=1024',
+      'https://static.wixstatic.com/media/d7d9fb_3b86be1391f746a093ff78ded0b98a08~mv2.png?originWidth=1920&originHeight=1024',
+      'https://static.wixstatic.com/media/d7d9fb_ae1d196d955243b49e7f585bf4e4532e~mv2.png?originWidth=1920&originHeight=1024',
+    ],
+  };
+}

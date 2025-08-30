@@ -29,7 +29,7 @@ export function SignIn({
           <CardDescription className="text-base">{message}</CardDescription>
         </CardHeader>
         <CardContent className="text-center px-10 pb-10">
-          <Button onClick={actions.login} className={buttonClassName}>
+          <Button onClick={() => actions.login()} className={buttonClassName}>
             {buttonText}
           </Button>
         </CardContent>

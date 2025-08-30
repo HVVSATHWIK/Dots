@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Mail, Phone, MapPin, Clock, Send, MessageCircle, Facebook, Twitter, Instagram, Youtube } from 'lucide-react';
+import { Mail, Phone, MapPin, Clock, Send, MessageCircle, Camera, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -56,10 +56,10 @@ export default function ContactPage() {
   ];
 
   const socialLinks = [
-    { icon: Facebook, name: 'Facebook', url: '#', color: 'hover:text-blue-600' },
-    { icon: Instagram, name: 'Instagram', url: '#', color: 'hover:text-pink-600' },
-    { icon: Twitter, name: 'Twitter', url: '#', color: 'hover:text-blue-400' },
-    { icon: Youtube, name: 'YouTube', url: '#', color: 'hover:text-red-600' }
+    { icon: MessageCircle, name: 'Facebook', url: '#', color: 'hover:text-blue-600' },
+    { icon: Camera, name: 'Instagram', url: '#', color: 'hover:text-pink-600' },
+    { icon: MessageCircle, name: 'X', url: '#', color: 'hover:text-blue-400' },
+    { icon: Play, name: 'YouTube', url: '#', color: 'hover:text-red-600' }
   ];
 
   const faqs = [

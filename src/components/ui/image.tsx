@@ -48,7 +48,10 @@ const WixImage = forwardRef<HTMLImageElement, WixImageProps>(
 
     if (!size) {
       const { uri, ...placeholder } = getPlaceholder(fittingType ?? 'fit', data, { htmlTag: 'img' })
-      return <img ref={ref} src={`${STATIC_MEDIA_URL}${uri}`} {...placeholder} {...imgProps} />
+      // Remove non-standard boolean attribute that React warns about
+      const { transformed, ...restPlaceholder } = (placeholder as any) || {}
+      const dataAttrs = transformed != null ? { 'data-transformed': String(transformed) } : {}
+      return <img ref={ref} src={`${STATIC_MEDIA_URL}${uri}`} {...restPlaceholder} {...dataAttrs} {...imgProps} />
     }
 
     const scale = fittingType === 'fit' ? sdk.getScaleToFitImageURL : sdk.getScaleToFillImageURL
