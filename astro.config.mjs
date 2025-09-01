@@ -2,7 +2,7 @@
 // (Editor-only) Disable TS checking here to avoid Vite/Rollup plugin type drift noise.
 import { defineConfig } from "astro/config";
 import tailwind from "@astrojs/tailwind";
-import vercel from "@astrojs/vercel/server";
+import vercel from "@astrojs/vercel/serverless";
 import wix from "@wix/astro";
 import react from "@astrojs/react";
 import sourceAttrsPlugin from "@wix/babel-plugin-jsx-source-attrs";
@@ -50,8 +50,8 @@ export default defineConfig({
       ...(isBuild ? [nodePolyfills()] : []),
     ],
   },
-  // Use Vercel adapter for production builds
-  adapter: isBuild ? vercel({ runtime: 'node' }) : undefined,
+  // Use Vercel adapter (serverless functions) for production builds
+  adapter: isBuild ? vercel() : undefined,
   devToolbar: {
     enabled: false,
   },
