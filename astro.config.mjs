@@ -2,12 +2,11 @@
 // (Editor-only) Disable TS checking here to avoid Vite/Rollup plugin type drift noise.
 import { defineConfig } from "astro/config";
 import tailwind from "@astrojs/tailwind";
-import vercel from "@astrojs/vercel/serverless";
+import vercel from "@astrojs/vercel";
 import wix from "@wix/astro";
 import react from "@astrojs/react";
 import sourceAttrsPlugin from "@wix/babel-plugin-jsx-source-attrs";
 import dynamicDataPlugin from "@wix/babel-plugin-jsx-dynamic-data";
-import { nodePolyfills } from "vite-plugin-node-polyfills";
 import customErrorOverlayPlugin from "./vite-error-overlay-plugin.js";
 
 const isBuild = process.env.NODE_ENV == "production";
@@ -47,7 +46,6 @@ export default defineConfig({
   vite: {
     plugins: [
   customErrorOverlayPlugin(),
-      ...(isBuild ? [nodePolyfills()] : []),
     ],
   },
   // Use Vercel adapter (serverless functions) for production builds
