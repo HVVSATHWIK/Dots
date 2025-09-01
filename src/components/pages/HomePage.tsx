@@ -8,7 +8,8 @@ import { Image } from '@/components/ui/image';
 import { motion } from 'framer-motion';
 
 export default function HomePage() {
-  const [currentSlide, setCurrentSlide] = useState(0);
+  // Start on the embroidery slide to match the reference hero
+  const [currentSlide, setCurrentSlide] = useState(2);
 
   // Hero carousel data
   const heroSlides = [

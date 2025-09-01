@@ -1,10 +1,11 @@
-import { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { Search, ShoppingCart, User, Menu, X, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Image } from '@/components/ui/image';
 import { useMember } from '@/integrations';
+import AssistantWidget from '@/components/AssistantWidget';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -14,8 +15,40 @@ export default function Layout({ children }: LayoutProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const location = useLocation();
-  const navigate = useNavigate();
   const { member, isAuthenticated, isLoading, actions } = useMember();
+  const role = member?.role || 'buyer';
+
+  // Dev-only fetch wrapper to surface non-JSON responses clearly in console
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    const w = window as any;
+    if (w.__dotsFetchPatched) return;
+    const origFetch = window.fetch.bind(window);
+    window.fetch = async (...args: Parameters<typeof fetch>) => {
+      const res = await origFetch(...args);
+      const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request).url;
+      const ct = res.headers.get('content-type') || '';
+      const origJson = res.json.bind(res);
+  (res as any).json = async () => {
+        if (!ct.includes('application/json')) {
+          try {
+    const preview = await res
+      .clone()
+      .text()
+      .then((t: string) => t.slice(0, 240))
+      .catch(() => '');
+            throw new SyntaxError(`Non-JSON response from ${url}. content-type=${ct}. preview=${preview}`);
+          } catch (e) {
+            throw e;
+          }
+        }
+        return origJson();
+      };
+      return res;
+    };
+    w.__dotsFetchPatched = true;
+    return () => { window.fetch = origFetch; w.__dotsFetchPatched = false; };
+  }, []);
 
   const navigation = [
     { name: 'Home', href: '/' },
@@ -92,15 +125,25 @@ export default function Layout({ children }: LayoutProps) {
 
             {/* Right Actions */}
             <div className="flex items-center space-x-4">
-              <Link to="/wishlist" className="hidden sm:block">
-                <Heart className="w-5 h-5 hover:text-neonaccent transition-colors" />
-              </Link>
-              <Link to="/cart" className="relative">
-                <ShoppingCart className="w-5 h-5 hover:text-neonaccent transition-colors" />
-                <span className="absolute -top-2 -right-2 bg-neonaccent text-primary text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                  0
-                </span>
-              </Link>
+              {role === 'buyer' && (
+                <>
+                  <Link to="/wishlist" className="hidden sm:block">
+                    <Heart className="w-5 h-5 hover:text-neonaccent transition-colors" />
+                  </Link>
+                  <Link to="/cart" className="relative">
+                    <ShoppingCart className="w-5 h-5 hover:text-neonaccent transition-colors" />
+                    <span className="absolute -top-2 -right-2 bg-neonaccent text-primary text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                      0
+                    </span>
+                  </Link>
+                </>
+              )}
+
+              {role === 'artisan' && (
+                <Link to="/copilot" className="hidden sm:block text-sm font-paragraph hover:text-neonaccent transition-colors">
+                  Seller Tools
+                </Link>
+              )}
               
               {isLoading ? (
                 <div className="w-8 h-8 bg-secondary rounded-full animate-pulse" />
@@ -113,6 +156,7 @@ export default function Layout({ children }: LayoutProps) {
                       </span>
                     </div>
                   </Link>
+                  <span className="text-xs opacity-80 uppercase">{role}</span>
                   <Button
                     onClick={actions.logout}
                     variant="ghost"
@@ -123,17 +167,17 @@ export default function Layout({ children }: LayoutProps) {
                   </Button>
                 </div>
               ) : (
-                <div className="flex items-center gap-2">
+                <div className="hidden sm:flex items-center gap-2">
+                  <Link to="/signup">
+                    <Button
+                      size="sm"
+                      className="bg-neonaccent text-primary hover:bg-neonaccent/90"
+                    >
+                      Join DOTS
+                    </Button>
+                  </Link>
                   <Button
-                    onClick={() => navigate('/signup')}
-                    variant="outline"
-                    size="sm"
-                    className="text-primary-foreground border-primary-foreground hover:bg-primary-foreground hover:text-primary"
-                  >
-                    Join DOTS
-                  </Button>
-                  <Button
-                    onClick={() => navigate('/login')}
+                    onClick={actions.login}
                     variant="ghost"
                     size="sm"
                     className="text-primary-foreground hover:text-neonaccent"
@@ -205,10 +249,21 @@ export default function Layout({ children }: LayoutProps) {
                     Profile
                   </Link>
                 ) : (
-                  <div className="flex items-center gap-2 pt-2">
-                    <Button size="sm" variant="outline" onClick={() => { setIsMenuOpen(false); navigate('/signup'); }}>Join DOTS</Button>
-                    <Button size="sm" variant="ghost" onClick={() => { setIsMenuOpen(false); navigate('/login'); }}>Sign In</Button>
-                  </div>
+                  <>
+                    <Link
+                      to="/signup"
+                      className="block text-sm font-paragraph hover:text-neonaccent transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Join DOTS
+                    </Link>
+                    <button
+                      className="block text-left w-full text-sm font-paragraph hover:text-neonaccent transition-colors"
+                      onClick={() => { setIsMenuOpen(false); actions.login(); }}
+                    >
+                      Sign In
+                    </button>
+                  </>
                 )}
               </nav>
             </div>
@@ -217,6 +272,10 @@ export default function Layout({ children }: LayoutProps) {
       </header>
       {/* Main Content */}
       <main>{children}</main>
+      {/* Global Assistant (hidden on auth routes) */}
+      {!(location.pathname === '/login' || location.pathname === '/signup') && (
+        <AssistantWidget />
+      )}
       {/* Footer */}
       <footer className="bg-primary text-primary-foreground">
         <div className="max-w-[120rem] mx-auto px-4 sm:px-6 lg:px-8 py-12">

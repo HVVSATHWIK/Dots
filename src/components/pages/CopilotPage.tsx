@@ -232,6 +232,7 @@ export default function CopilotPage() {
                 </CardContent>
               </Card>
             </div>
+            <p className="text-sm text-primary/60">Tip: Use the assistant bubble at the bottom-right anywhere in DOTS.</p>
           </TabsContent>
 
           <TabsContent value="collaborator" className="space-y-6">

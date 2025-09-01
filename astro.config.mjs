@@ -3,7 +3,6 @@
 import { defineConfig } from "astro/config";
 import tailwind from "@astrojs/tailwind";
 import cloudflare from "@astrojs/cloudflare";
-import vercel from "@astrojs/vercel";
 import wix from "@wix/astro";
 import react from "@astrojs/react";
 import sourceAttrsPlugin from "@wix/babel-plugin-jsx-source-attrs";
@@ -47,13 +46,11 @@ export default defineConfig({
   ],
   vite: {
     plugins: [
-      customErrorOverlayPlugin(),
-      // Only use browser node polyfills in dev; avoid in prod build to prevent ENOTDIR issues on Vercel
-      ...(!isBuild ? [nodePolyfills()] : []),
+  customErrorOverlayPlugin(),
+      ...(isBuild ? [nodePolyfills()] : []),
     ],
   },
-  // Use the appropriate adapter per platform: Vercel in Vercel CI, Cloudflare otherwise when building
-  adapter: isBuild ? (process.env.VERCEL ? vercel() : cloudflare()) : undefined,
+  adapter: isBuild ? cloudflare() : undefined,
   devToolbar: {
     enabled: false,
   },

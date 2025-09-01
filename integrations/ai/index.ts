@@ -1,4 +1,4 @@
-import type { DesignVariationInput, DesignVariationResult, GenerateListingInput, ListingPack } from './types';
+import type { DesignVariationInput, DesignVariationResult, GenerateListingInput, ListingPack, GenerateImageInput, GenerateImageResult } from './types';
 
 const api = import.meta.env.VITE_API_AI_BASE_URL ?? '/api/ai';
 
@@ -87,4 +87,95 @@ export async function generateDesignVariations(input: DesignVariationInput): Pro
       'https://static.wixstatic.com/media/d7d9fb_ae1d196d955243b49e7f585bf4e4532e~mv2.png?originWidth=1920&originHeight=1024',
     ],
   };
+}
+
+// Simple chat helper reused by the global Assistant widget
+export type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string };
+
+export async function chat(messages: ChatMessage[], model?: string): Promise<string> {
+  const url = `${api}/chat`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ messages, model }),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`AI chat error (${res.status}): ${text.slice(0, 240)}`);
+  }
+  const ct = res.headers.get('content-type') || '';
+  if (!ct.includes('application/json')) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`AI chat non-JSON response: ${text.slice(0, 240)}`);
+  }
+  const json = await res.json();
+  return String(json.reply ?? '');
+}
+
+export async function generateImage(input: GenerateImageInput): Promise<GenerateImageResult> {
+  const url = `${api}/image`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ prompt: input.prompt, model: input.model }),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`AI image error (${res.status}): ${text.slice(0, 240)}`);
+  }
+  const ct = res.headers.get('content-type') || '';
+  if (!ct.includes('application/json')) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`AI image non-JSON response: ${text.slice(0, 240)}`);
+  }
+  return await res.json();
+}
+
+// Image captioning (Gemini vision): send files or URLs; returns structured captions
+export type Caption = {
+  title: string;
+  shortCaption: string;
+  tags: string[];
+  materials: string[];
+  techniques: string[];
+  colors: string[];
+  style?: string;
+  suggestedPriceRange?: { min: number; max: number; currency?: string };
+  confidence?: number;
+};
+
+export async function captionImages(input: { files?: File[]; urls?: string[] }): Promise<{ captions: Caption[]; note?: string }> {
+  const url = `${api}/caption`;
+  const hasFiles = !!(input.files && input.files.length > 0);
+  if (hasFiles) {
+    const fd = new FormData();
+    for (const f of input.files!) fd.append('images', f);
+    for (const u of input.urls ?? []) fd.append('urls', u);
+    const res = await fetch(url, { method: 'POST', body: fd });
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`AI caption error (${res.status}): ${text.slice(0, 240)}`);
+    }
+    const ct = res.headers.get('content-type') || '';
+    if (!ct.includes('application/json')) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`AI caption non-JSON response: ${text.slice(0, 240)}`);
+    }
+    return await res.json();
+  }
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ urls: input.urls ?? [] }),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`AI caption error (${res.status}): ${text.slice(0, 240)}`);
+  }
+  const ct = res.headers.get('content-type') || '';
+  if (!ct.includes('application/json')) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`AI caption non-JSON response: ${text.slice(0, 240)}`);
+  }
+  return await res.json();
 }

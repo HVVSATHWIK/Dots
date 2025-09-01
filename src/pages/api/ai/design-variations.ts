@@ -19,7 +19,7 @@ export const POST: APIRoute = async ({ request }) => {
     const prompt = String(form.get('prompt') ?? 'Refine background and lighting, keep product intact.');
     const baseImage = form.get('baseImage') as File | null;
 
-  const apiKey = process.env.GEMINI_API_KEY as string | undefined;
+  const apiKey = (import.meta.env.GEMINI_API_KEY as string | undefined) ?? (process.env.GEMINI_API_KEY as string | undefined);
     if (!apiKey || !(baseImage instanceof File)) {
       // Fall back to static stubs if missing input or key
       const json = {
@@ -34,7 +34,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const modelName = (process.env.GEMINI_MODEL as string) || 'gemini-1.5-flash';
+  const modelName = (import.meta.env.GEMINI_MODEL as string | undefined) || (process.env.GEMINI_MODEL as string | undefined) || 'gemini-1.5-flash';
   const model = genAI.getGenerativeModel({ model: modelName });
 
     const b64 = await fileToBase64(baseImage);

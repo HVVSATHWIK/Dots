@@ -17,3 +17,5 @@ export type GenerateListingInput = {
 
 export type DesignVariationInput = { baseImage: File; prompt: string };
 export type DesignVariationResult = { variations: string[] };
+export type GenerateImageInput = { prompt: string; model?: string };
+export type GenerateImageResult = { images: string[]; note?: string };

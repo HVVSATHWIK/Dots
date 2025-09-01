@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Upload, FileImage, X, Send } from 'lucide-react';
+import { Upload, FileImage, X, Send, Image as ImageIcon, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
+import * as React from 'react';
+import { generateImage, captionImages } from '@/integrations/ai';
 
 export default function CustomRequestsPage() {
   const [formData, setFormData] = useState({
@@ -26,6 +28,23 @@ export default function CustomRequestsPage() {
   });
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [genOpen, setGenOpen] = useState(false);
+  const [genLoading, setGenLoading] = useState(false);
+  const [genImages, setGenImages] = useState<string[]>([]);
+  const [genError, setGenError] = useState<string | null>(null);
+  const [capLoading, setCapLoading] = useState(false);
+  const [capError, setCapError] = useState<string | null>(null);
+  const [captions, setCaptions] = useState<{
+    title: string;
+    shortCaption: string;
+    tags: string[];
+    materials: string[];
+    techniques: string[];
+    colors: string[];
+    style?: string;
+    suggestedPriceRange?: { min: number; max: number; currency?: string };
+    confidence?: number;
+  }[]>([]);
 
   const artTypes = [
     { value: 'painting', label: 'Painting' },
@@ -129,6 +148,42 @@ export default function CustomRequestsPage() {
     setIsSubmitting(false);
 
     alert('Your custom art request has been submitted successfully! Our artisans will contact you within 24 hours.');
+  };
+
+  const runGenerateImage = async () => {
+    setGenError(null);
+    setGenLoading(true);
+    try {
+      const promptParts = [formData.theme, formData.description, formData.size, formData.colorPreferences.join(', ')].filter(Boolean);
+      const prompt = `Custom art concept: ${promptParts.join(' | ')}`;
+      const res = await generateImage({ prompt });
+      setGenImages(res.images ?? []);
+      setGenOpen(true);
+      if (res.note) console.info('[AI Image]', res.note);
+    } catch (e: any) {
+      setGenError(e?.message ?? 'Failed to generate image');
+      setGenOpen(true);
+    } finally {
+      setGenLoading(false);
+    }
+  };
+
+  const runCaptionImages = async () => {
+    setCapError(null);
+    setCapLoading(true);
+    setCaptions([]);
+    try {
+      if (uploadedFiles.length === 0) {
+        setCapError('Upload 1–3 reference images first.');
+        return;
+      }
+      const res = await captionImages({ files: uploadedFiles.slice(0, 3) });
+      setCaptions(res.captions || []);
+    } catch (e: any) {
+      setCapError(e?.message ?? 'Failed to caption images');
+    } finally {
+      setCapLoading(false);
+    }
   };
 
   return (
@@ -458,6 +513,37 @@ export default function CustomRequestsPage() {
                       ))}
                     </div>
                   )}
+
+                  {/* AI Captions Results */}
+                  {(capLoading || capError || captions.length > 0) && (
+                    <div className="mt-4 space-y-2">
+                      {capLoading && (
+                        <div className="text-sm text-primary/60">Analyzing images…</div>
+                      )}
+                      {capError && (
+                        <div className="text-sm text-red-600">{capError}</div>
+                      )}
+                      {captions.length > 0 && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {captions.map((c, i) => (
+                            <div key={i} className="rounded-lg border p-3">
+                              <div className="font-heading font-bold text-primary text-sm mb-1">
+                                {c.title}
+                              </div>
+                              <div className="text-xs text-primary/70 mb-2">{c.shortCaption}</div>
+                              <div className="flex flex-wrap gap-1">
+                                {(c.tags || []).slice(0, 6).map((t, j) => (
+                                  <Badge key={j} variant="secondary" className="bg-neonaccent text-primary">
+                                    {t}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Additional Notes */}
@@ -475,8 +561,32 @@ export default function CustomRequestsPage() {
                   />
                 </div>
 
-                {/* Submit Button */}
+                {/* AI Generate Preview + Submit Button */}
                 <div className="text-center pt-6">
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-4">
+                    <Button type="button" variant="outline" onClick={runGenerateImage} disabled={genLoading}>
+                      {genLoading ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> Generating…
+                        </>
+                      ) : (
+                        <>
+                          <ImageIcon className="w-4 h-4 mr-2" /> AI Preview (Optional)
+                        </>
+                      )}
+                    </Button>
+                    <Button type="button" variant="outline" onClick={runCaptionImages} disabled={capLoading}>
+                      {capLoading ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> Captioning…
+                        </>
+                      ) : (
+                        <>
+                          <ImageIcon className="w-4 h-4 mr-2" /> AI Captions (Optional)
+                        </>
+                      )}
+                    </Button>
+                  </div>
                   <Button
                     type="submit"
                     size="lg"
@@ -560,6 +670,31 @@ export default function CustomRequestsPage() {
             </Card>
           </div>
         </motion.div>
+
+        {/* Simple Modal Preview for Generated Images */}
+        {genOpen && (
+          <div className="fixed inset-0 z-[110] bg-black/50 flex items-center justify-center p-4" role="dialog" aria-modal>
+            <div className="bg-background rounded-xl shadow-xl border max-w-3xl w-full p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-heading font-bold text-lg">AI Image Preview</h3>
+                <button aria-label="Close" onClick={() => setGenOpen(false)} className="p-1 rounded hover:bg-accent">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              {genError && <div className="text-red-600 text-sm mb-2">{genError}</div>}
+              {genImages.length === 0 && !genError && (
+                <div className="text-sm text-muted-foreground">No preview available.</div>
+              )}
+              {genImages.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {genImages.map((url, i) => (
+                    <img key={i} src={url} alt={`AI preview ${i + 1}`} className="w-full h-auto rounded-lg border" />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

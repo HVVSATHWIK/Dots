@@ -11,7 +11,15 @@ export async function mintBirthCertificate(input: MintInput): Promise<BirthCerti
     if (input.rawEvidence.voiceNote) fd.append('voiceNote', input.rawEvidence.voiceNote);
     input.rawEvidence.workInProgress.forEach((f, i) => fd.append(`workInProgress[${i}]`, f));
   const res = await fetch(`${trustApi}/mint`, { method: 'POST', body: fd });
-    if (!res.ok) throw new Error('Trust API error');
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`Trust API error (${res.status}): ${text.slice(0, 240)}`);
+    }
+    const ct = res.headers.get('content-type') || '';
+    if (!ct.includes('application/json')) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`Trust API non-JSON response: ${text.slice(0, 240)}`);
+    }
     return await res.json();
   }
   await new Promise(r => setTimeout(r, 800));

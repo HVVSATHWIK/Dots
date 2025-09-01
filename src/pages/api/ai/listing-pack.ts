@@ -40,13 +40,13 @@ export const POST: APIRoute = async ({ request }) => {
       if (key.startsWith('images[') && val instanceof File) images.push(val);
     }
 
-  const apiKey = process.env.GEMINI_API_KEY as string | undefined;
+  const apiKey = (import.meta.env.GEMINI_API_KEY as string | undefined) ?? (process.env.GEMINI_API_KEY as string | undefined);
     if (!apiKey) {
       throw new Error('Server missing GEMINI_API_KEY');
     }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const modelName = (process.env.GEMINI_MODEL as string) || 'gemini-1.5-flash';
+  const modelName = (import.meta.env.GEMINI_MODEL as string | undefined) || (process.env.GEMINI_MODEL as string | undefined) || 'gemini-1.5-flash';
   const model = genAI.getGenerativeModel({ model: modelName });
 
     const parts: any[] = [];
