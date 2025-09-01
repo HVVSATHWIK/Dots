@@ -216,13 +216,13 @@ export default function HomePage() {
             <h2 className="font-heading text-4xl font-bold text-primary mb-4 uppercase tracking-wide">
               EXPLORE BY CATEGORY
             </h2>
-            <p className="text-lg max-w-2xl mx-auto font-heading text-color-10">
+            <p className="text-lg max-w-2xl mx-auto font-paragraph text-primary/70 leading-relaxed">
               Discover authentic Indian crafts organized by themes and occasions
             </p>
           </div>
 
-          <div className="overflow-x-auto pb-4">
-            <div className="flex space-x-6 min-w-max">
+          <div className="overflow-x-auto pb-6">
+            <div className="flex space-x-8 min-w-max px-4">
               {categories.map((category, index) => (
                 <motion.div
                   key={category.name}
@@ -232,12 +232,12 @@ export default function HomePage() {
                 >
                   <Link
                     to={category.href}
-                    className="flex flex-col items-center group text-primary"
+                    className="flex flex-col items-center group text-primary min-w-[5rem]"
                   >
-                    <div className="w-20 h-20 bg-neonaccent rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
+                    <div className="w-20 h-20 bg-neonaccent rounded-full flex items-center justify-center mb-3 group-hover:scale-110 group-hover:shadow-lg transition-all duration-300 shadow-soft">
                       <span className="text-3xl">{category.icon}</span>
                     </div>
-                    <span className="text-sm group-hover:text-black transition-colors font-heading text-primary">
+                    <span className="text-sm group-hover:text-neonaccent transition-colors font-heading text-primary text-center leading-tight">
                       {category.name}
                     </span>
                   </Link>
@@ -247,6 +247,7 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+      
       {/* Featured Products */}
       <section className="py-16 bg-secondary">
         <div className="max-w-[120rem] mx-auto px-4 sm:px-6 lg:px-8">
@@ -254,7 +255,7 @@ export default function HomePage() {
             <h2 className="font-heading text-4xl font-bold text-primary mb-4 uppercase tracking-wide">
               FEATURED ARTWORKS
             </h2>
-            <p className="text-lg max-w-2xl mx-auto text-color-10 font-heading">
+            <p className="text-lg max-w-2xl mx-auto text-primary/70 font-paragraph leading-relaxed">
               Handpicked masterpieces from our talented artisan community
             </p>
           </div>
@@ -267,7 +268,7 @@ export default function HomePage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
               >
-                <Card className="group hover:shadow-lg transition-shadow duration-300 border-0">
+                <Card className="group hover:shadow-large transition-all duration-300 border-0 hover:-translate-y-1">
                   <CardContent className="p-0">
                     <div className="relative overflow-hidden rounded-t-lg">
                       <Image
@@ -281,22 +282,22 @@ export default function HomePage() {
                           <Badge
                             key={tag}
                             variant="secondary"
-                            className="bg-neonaccent text-primary text-xs"
+                            className="bg-neonaccent text-primary text-xs font-bold shadow-sm"
                           >
                             {tag}
                           </Badge>
                         ))}
                       </div>
-                      <button className="absolute top-2 right-2 p-2 bg-white/80 rounded-full hover:bg-white transition-colors">
+                      <button className="absolute top-2 right-2 p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white hover:scale-110 transition-all shadow-sm">
                         <Heart className="w-4 h-4 text-primary" />
                       </button>
                     </div>
 
-                    <div className="p-4">
+                    <div className="p-5">
                       <h3 className="font-heading font-bold text-lg text-primary mb-1 line-clamp-1">
                         {product.name}
                       </h3>
-                      <p className="text-sm mb-2 text-color-10 font-heading">
+                      <p className="text-sm mb-3 text-primary/70 font-paragraph">
                         by {product.artist}
                       </p>
 
@@ -307,7 +308,7 @@ export default function HomePage() {
                             {product.rating}
                           </span>
                         </div>
-                        <span className="text-xs ml-2 font-heading text-color-10">
+                        <span className="text-xs ml-2 font-paragraph text-primary/60">
                           ({product.reviews} reviews)
                         </span>
                       </div>
@@ -317,7 +318,7 @@ export default function HomePage() {
                           <span className="font-heading font-bold text-lg text-primary">
                             ₹{product.price.toLocaleString()}
                           </span>
-                          <span className="text-sm line-through text-color-10 font-heading">
+                          <span className="text-sm line-through text-primary/50 font-paragraph">
                             ₹{product.originalPrice.toLocaleString()}
                           </span>
                         </div>
@@ -325,7 +326,7 @@ export default function HomePage() {
                           {product.colors.map((color, idx) => (
                             <div
                               key={idx}
-                              className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
+                              className="w-4 h-4 rounded-full border-2 border-white shadow-sm ring-1 ring-gray-200"
                               style={{ backgroundColor: color }}
                             />
                           ))}
@@ -335,7 +336,7 @@ export default function HomePage() {
                       <div className="flex space-x-2">
                         <Button
                           size="sm"
-                          className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+                          className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 font-heading font-medium"
                         >
                           <ShoppingCart className="w-4 h-4 mr-2" />
                           Add to Cart
@@ -343,7 +344,7 @@ export default function HomePage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                          className="border-primary text-primary hover:bg-primary hover:text-primary-foreground font-heading font-medium"
                         >
                           View
                         </Button>
@@ -360,7 +361,7 @@ export default function HomePage() {
               asChild
               variant="outline"
               size="lg"
-              className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+              className="border-primary text-primary hover:bg-primary hover:text-primary-foreground font-heading font-bold hover:scale-105 transition-transform"
             >
               <Link to="/discover">
                 View All Products
@@ -370,6 +371,7 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+      
       {/* Action Cards */}
       <section className="py-16 bg-background">
         <div className="max-w-[120rem] mx-auto px-4 sm:px-6 lg:px-8">
@@ -379,18 +381,18 @@ export default function HomePage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
             >
-              <Card className="h-full bg-gradient-to-br from-primary to-primary/80 text-primary-foreground border-0">
-                <CardContent className="p-6 text-center">
+              <Card className="h-full bg-gradient-to-br from-primary to-primary/80 text-primary-foreground border-0 hover:shadow-large transition-all duration-300 hover:-translate-y-1">
+                <CardContent className="p-8 text-center">
                   <h3 className="font-heading text-xl font-bold mb-3 uppercase">
                     Explore Art by Themes
                   </h3>
-                  <p className="text-sm mb-4 text-primary-foreground/80 font-heading">
+                  <p className="text-sm mb-6 text-primary-foreground/90 font-paragraph leading-relaxed">
                     Discover curated collections for weddings, festivals, and special occasions
                   </p>
                   <Button
                     asChild
                     variant="secondary"
-                    className="bg-neonaccent text-primary hover:bg-neonaccent/90"
+                    className="bg-neonaccent text-primary hover:bg-neonaccent/90 font-heading font-bold hover:scale-105 transition-transform"
                   >
                     <Link to="/themes">Explore Now</Link>
                   </Button>
@@ -403,18 +405,18 @@ export default function HomePage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
             >
-              <Card className="h-full bg-gradient-to-br from-neonaccent to-neonaccent/80 text-primary border-0">
-                <CardContent className="p-6 text-center">
+              <Card className="h-full bg-gradient-to-br from-neonaccent to-neonaccent/80 text-primary border-0 hover:shadow-large transition-all duration-300 hover:-translate-y-1">
+                <CardContent className="p-8 text-center">
                   <h3 className="font-heading text-xl font-bold mb-3 uppercase">
                     Explore Traditional Art
                   </h3>
-                  <p className="text-sm mb-4 text-primary/80 font-heading">
+                  <p className="text-sm mb-6 text-primary/80 font-paragraph leading-relaxed">
                     Immerse yourself in centuries-old crafting traditions from across India
                   </p>
                   <Button
                     asChild
                     variant="secondary"
-                    className="bg-primary text-primary-foreground hover:bg-primary/90"
+                    className="bg-primary text-primary-foreground hover:bg-primary/90 font-heading font-bold hover:scale-105 transition-transform"
                   >
                     <Link to="/discover?category=traditional">Explore Now</Link>
                   </Button>
@@ -427,17 +429,17 @@ export default function HomePage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
             >
-              <Card className="h-full bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
-                <CardContent className="p-6 text-center">
+              <Card className="h-full bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 hover:shadow-large transition-all duration-300 hover:-translate-y-1">
+                <CardContent className="p-8 text-center">
                   <h3 className="font-heading text-xl font-bold mb-3 uppercase text-primary">
                     Discover Section
                   </h3>
-                  <p className="text-sm mb-4 text-primary/70 font-heading">
+                  <p className="text-sm mb-6 text-primary/70 font-paragraph leading-relaxed">
                     Browse our complete collection of authentic handcrafted artworks
                   </p>
                   <Button
                     asChild
-                    className="bg-primary text-primary-foreground hover:bg-primary/90"
+                    className="bg-primary text-primary-foreground hover:bg-primary/90 font-heading font-bold hover:scale-105 transition-transform"
                   >
                     <Link to="/discover">Explore Now</Link>
                   </Button>
@@ -450,17 +452,17 @@ export default function HomePage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
             >
-              <Card className="h-full bg-gradient-to-br from-primary/5 to-neonaccent/10 border-neonaccent/30">
-                <CardContent className="p-6 text-center">
+              <Card className="h-full bg-gradient-to-br from-primary/5 to-neonaccent/10 border border-neonaccent/30 hover:shadow-large transition-all duration-300 hover:-translate-y-1">
+                <CardContent className="p-8 text-center">
                   <h3 className="font-heading text-xl font-bold mb-3 uppercase text-primary">
                     Join Our Community
                   </h3>
-                  <p className="text-sm mb-4 text-primary/70 font-heading">
+                  <p className="text-sm mb-6 text-primary/70 font-paragraph leading-relaxed">
                     Connect with artisans, share ideas, and learn about Indian craft traditions
                   </p>
                   <Button
                     asChild
-                    className="bg-neonaccent text-primary hover:bg-neonaccent/90"
+                    className="bg-neonaccent text-primary hover:bg-neonaccent/90 font-heading font-bold hover:scale-105 transition-transform"
                   >
                     <Link to="/community">Join Now</Link>
                   </Button>

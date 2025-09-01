@@ -7,11 +7,14 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import * as React from 'react';
 import { generateImage, captionImages } from '@/integrations/ai';
 
 export default function CustomRequestsPage() {
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -28,6 +31,7 @@ export default function CustomRequestsPage() {
   });
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const [genOpen, setGenOpen] = useState(false);
   const [genLoading, setGenLoading] = useState(false);
   const [genImages, setGenImages] = useState<string[]>([]);
@@ -121,33 +125,60 @@ export default function CustomRequestsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validation
+    if (!formData.name || !formData.email || !formData.artType || !formData.theme || !formData.description || !formData.budget || !formData.timeline) {
+      toast({
+        title: "Please fill in all required fields",
+        description: "All fields marked with * are required.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
-    // Simulate form submission
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    try {
+      // Simulate form submission
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
-    // Here you would typically send the data to your backend
-    console.log('Form submitted:', { formData, uploadedFiles });
+      // Here you would typically send the data to your backend
+      console.log('Form submitted:', { formData, uploadedFiles });
 
-    // Reset form
-    setFormData({
-      name: '',
-      email: '',
-      phone: '',
-      artType: '',
-      theme: '',
-      description: '',
-      budget: '',
-      timeline: '',
-      colorPreferences: [],
-      size: '',
-      occasion: '',
-      additionalNotes: ''
-    });
-    setUploadedFiles([]);
-    setIsSubmitting(false);
+      // Reset form
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        artType: '',
+        theme: '',
+        description: '',
+        budget: '',
+        timeline: '',
+        colorPreferences: [],
+        size: '',
+        occasion: '',
+        additionalNotes: ''
+      });
+      setUploadedFiles([]);
+      
+      setIsSubmitted(true);
+      toast({
+        title: "Custom request submitted!",
+        description: "You'll receive proposals from interested artisans within 24 hours.",
+      });
 
-    alert('Your custom art request has been submitted successfully! Our artisans will contact you within 24 hours.');
+      // Reset submitted state after 3 seconds
+      setTimeout(() => setIsSubmitted(false), 3000);
+    } catch (error) {
+      toast({
+        title: "Failed to submit request",
+        description: "Please try again or contact us directly.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const runGenerateImage = async () => {
@@ -590,12 +621,17 @@ export default function CustomRequestsPage() {
                   <Button
                     type="submit"
                     size="lg"
-                    disabled={isSubmitting || !formData.name || !formData.email || !formData.artType || !formData.theme || !formData.description || !formData.budget || !formData.timeline}
-                    className="bg-neonaccent text-primary hover:bg-neonaccent/90 font-heading font-bold px-8 py-4"
+                    disabled={isSubmitting || isSubmitted || !formData.name || !formData.email || !formData.artType || !formData.theme || !formData.description || !formData.budget || !formData.timeline}
+                    className="bg-neonaccent text-primary hover:bg-neonaccent/90 font-heading font-bold px-8 py-4 transition-all hover:scale-105"
                   >
-                    {isSubmitting ? (
+                    {isSubmitted ? (
                       <>
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary mr-2" />
+                        <CheckCircle className="w-5 h-5 mr-2" />
+                        Request Submitted!
+                      </>
+                    ) : isSubmitting ? (
+                      <>
+                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                         Submitting Request...
                       </>
                     ) : (

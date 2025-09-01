@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Search, ShoppingCart, User, Menu, X, Heart } from 'lucide-react';
+import { Search, ShoppingCart, User, Menu, X, Heart, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Image } from '@/components/ui/image';
 import { useMember } from '@/integrations';
 import AssistantWidget from '@/components/AssistantWidget';
+import { Badge } from '@/components/ui/badge';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -70,11 +72,11 @@ export default function Layout({ children }: LayoutProps) {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-primary text-primary-foreground sticky top-0 z-50">
+      <header className="bg-primary text-primary-foreground sticky top-0 z-50 shadow-lg">
         <div className="max-w-[120rem] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <Link to="/" className="flex items-center space-x-2">
+            <Link to="/" className="flex items-center space-x-3 group">
               <div className="w-8 h-8 rounded-full flex items-center justify-center bg-[#a6d608]">
                 <Image
                   src="https://static.wixstatic.com/media/d7d9fb_1971b31325f24d11889c078816a754de~mv2.png#originWidth=402&originHeight=288"
@@ -83,11 +85,13 @@ export default function Layout({ children }: LayoutProps) {
                   className="w-6 h-6 object-contain"
                 />
               </div>
-              <span className="font-heading font-bold text-xl">DOTS</span>
+              <span className="font-heading font-bold text-xl group-hover:text-neonaccent transition-colors">
+                DOTS
+              </span>
             </Link>
 
             {/* Search Bar - Desktop */}
-            <div className="hidden md:flex flex-1 max-w-2xl mx-8">
+            <div className="hidden md:flex flex-1 max-w-xl mx-8">
               <form onSubmit={handleSearch} className="w-full">
                 <div className="relative">
                   <Input
@@ -95,12 +99,12 @@ export default function Layout({ children }: LayoutProps) {
                     placeholder="Search for artworks, artists, categories..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-4 pr-12 py-2 bg-background text-foreground border-0 rounded-full"
+                    className="w-full pl-4 pr-12 py-2 bg-background text-foreground border-0 rounded-full shadow-sm focus:shadow-md transition-shadow"
                   />
                   <Button
                     type="submit"
                     size="sm"
-                    className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full text-primary hover:bg-neonaccent/90 bg-neon"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full text-primary hover:bg-neonaccent/90 bg-neonaccent transition-all hover:scale-105"
                   >
                     <Search className="w-4 h-4" />
                   </Button>
@@ -114,11 +118,12 @@ export default function Layout({ children }: LayoutProps) {
                 <Link
                   key={item.name}
                   to={item.href}
-                  className={`text-sm font-paragraph hover:text-neonaccent transition-colors ${
+                  className={`text-sm font-paragraph hover:text-neonaccent transition-colors relative group ${
                     location.pathname === item.href ? 'text-neonaccent' : ''
                   }`}
                 >
                   {item.name}
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-neonaccent transition-all group-hover:w-full" />
                 </Link>
               ))}
             </nav>
@@ -127,41 +132,64 @@ export default function Layout({ children }: LayoutProps) {
             <div className="flex items-center space-x-4">
               {role === 'buyer' && (
                 <>
+                  <button className="relative p-2 hover:bg-primary-foreground/10 rounded-full transition-colors">
+                    <Bell className="w-5 h-5 hover:text-neonaccent transition-colors" />
+                    <Badge className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full p-0 flex items-center justify-center">
+                      3
+                    </Badge>
+                  </button>
                   <Link to="/wishlist" className="hidden sm:block">
-                    <Heart className="w-5 h-5 hover:text-neonaccent transition-colors" />
+                    <div className="relative p-2 hover:bg-primary-foreground/10 rounded-full transition-colors">
+                      <Heart className="w-5 h-5 hover:text-neonaccent transition-colors" />
+                    </div>
                   </Link>
                   <Link to="/cart" className="relative">
-                    <ShoppingCart className="w-5 h-5 hover:text-neonaccent transition-colors" />
-                    <span className="absolute -top-2 -right-2 bg-neonaccent text-primary text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                      0
-                    </span>
+                    <div className="relative p-2 hover:bg-primary-foreground/10 rounded-full transition-colors">
+                      <ShoppingCart className="w-5 h-5 hover:text-neonaccent transition-colors" />
+                      <Badge className="absolute -top-1 -right-1 bg-neonaccent text-primary text-xs w-5 h-5 rounded-full p-0 flex items-center justify-center font-bold">
+                        2
+                      </Badge>
+                    </div>
                   </Link>
                 </>
               )}
 
               {role === 'artisan' && (
-                <Link to="/copilot" className="hidden sm:block text-sm font-paragraph hover:text-neonaccent transition-colors">
-                  Seller Tools
+                <Link to="/copilot" className="hidden sm:block">
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className="text-primary-foreground hover:text-neonaccent hover:bg-primary-foreground/10"
+                  >
+                    Seller Tools
+                  </Button>
                 </Link>
               )}
               
               {isLoading ? (
-                <div className="w-8 h-8 bg-secondary rounded-full animate-pulse" />
+                <div className="w-10 h-10 bg-primary-foreground/20 rounded-full animate-pulse" />
               ) : isAuthenticated ? (
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-3">
                   <Link to="/profile" className="hidden sm:block">
-                    <div className="w-8 h-8 bg-neonaccent rounded-full flex items-center justify-center">
+                    <div className="w-10 h-10 bg-neonaccent rounded-full flex items-center justify-center hover:scale-105 transition-transform cursor-pointer">
                       <span className="text-primary font-bold text-sm">
                         {member?.profile?.nickname?.[0] || member?.contact?.firstName?.[0] || 'U'}
                       </span>
                     </div>
                   </Link>
-                  <span className="text-xs opacity-80 uppercase">{role}</span>
+                  <div className="hidden sm:flex flex-col">
+                    <span className="text-xs font-medium text-primary-foreground/90">
+                      {member?.profile?.nickname || member?.contact?.firstName || 'User'}
+                    </span>
+                    <Badge variant="secondary" className="bg-neonaccent text-primary text-xs">
+                      {role}
+                    </Badge>
+                  </div>
                   <Button
                     onClick={actions.logout}
                     variant="ghost"
                     size="sm"
-                    className="hidden sm:block text-primary-foreground hover:text-neonaccent"
+                    className="hidden sm:block text-primary-foreground hover:text-neonaccent hover:bg-primary-foreground/10"
                   >
                     Sign Out
                   </Button>
@@ -171,7 +199,7 @@ export default function Layout({ children }: LayoutProps) {
                   <Link to="/signup">
                     <Button
                       size="sm"
-                      className="bg-neonaccent text-primary hover:bg-neonaccent/90"
+                      className="bg-neonaccent text-primary hover:bg-neonaccent/90 font-heading font-bold hover:scale-105 transition-transform"
                     >
                       Join DOTS
                     </Button>
@@ -180,7 +208,7 @@ export default function Layout({ children }: LayoutProps) {
                     onClick={actions.login}
                     variant="ghost"
                     size="sm"
-                    className="text-primary-foreground hover:text-neonaccent"
+                    className="text-primary-foreground hover:text-neonaccent hover:bg-primary-foreground/10"
                   >
                     <User className="w-4 h-4 mr-2" />
                     Sign In
@@ -192,7 +220,7 @@ export default function Layout({ children }: LayoutProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                className="lg:hidden text-primary-foreground"
+                className="lg:hidden text-primary-foreground hover:bg-primary-foreground/10"
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
               >
                 {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -209,12 +237,12 @@ export default function Layout({ children }: LayoutProps) {
                   placeholder="Search artworks..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-4 pr-12 py-2 bg-background text-foreground border-0 rounded-full"
+                  className="w-full pl-4 pr-12 py-2 bg-background text-foreground border-0 rounded-full shadow-sm"
                 />
                 <Button
                   type="submit"
                   size="sm"
-                  className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full bg-neonaccent text-primary hover:bg-neonaccent/90"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full bg-neonaccent text-primary hover:bg-neonaccent/90 transition-all hover:scale-105"
                 >
                   <Search className="w-4 h-4" />
                 </Button>
@@ -224,77 +252,121 @@ export default function Layout({ children }: LayoutProps) {
         </div>
 
         {/* Mobile Navigation */}
-        {isMenuOpen && (
-          <div className="lg:hidden bg-primary border-t border-primary-foreground/10">
-            <div className="max-w-[120rem] mx-auto px-4 py-4">
-              <nav className="space-y-4">
-                {navigation.map((item) => (
-                  <Link
-                    key={item.name}
-                    to={item.href}
-                    className={`block text-sm font-paragraph hover:text-neonaccent transition-colors ${
-                      location.pathname === item.href ? 'text-neonaccent' : ''
-                    }`}
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    {item.name}
-                  </Link>
-                ))}
-                {isAuthenticated ? (
-                  <Link
-                    to="/profile"
-                    className="block text-sm font-paragraph hover:text-neonaccent transition-colors"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Profile
-                  </Link>
-                ) : (
-                  <>
+        <AnimatePresence>
+          {isMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+              className="lg:hidden bg-primary border-t border-primary-foreground/10"
+            >
+              <div className="max-w-[120rem] mx-auto px-4 py-6">
+                <nav className="space-y-4">
+                  {navigation.map((item) => (
                     <Link
-                      to="/signup"
-                      className="block text-sm font-paragraph hover:text-neonaccent transition-colors"
+                      key={item.name}
+                      to={item.href}
+                      className={`block text-sm font-paragraph hover:text-neonaccent transition-colors py-2 px-3 rounded-lg hover:bg-primary-foreground/10 ${
+                        location.pathname === item.href ? 'text-neonaccent bg-primary-foreground/10' : ''
+                      }`}
                       onClick={() => setIsMenuOpen(false)}
                     >
-                      Join DOTS
+                      {item.name}
                     </Link>
-                    <button
-                      className="block text-left w-full text-sm font-paragraph hover:text-neonaccent transition-colors"
-                      onClick={() => { setIsMenuOpen(false); actions.login(); }}
-                    >
-                      Sign In
-                    </button>
-                  </>
-                )}
-              </nav>
-            </div>
-          </div>
-        )}
+                  ))}
+                  
+                  <div className="border-t border-primary-foreground/10 pt-4 mt-4">
+                    {isAuthenticated ? (
+                      <>
+                        <Link
+                          to="/profile"
+                          className="block text-sm font-paragraph hover:text-neonaccent transition-colors py-2 px-3 rounded-lg hover:bg-primary-foreground/10"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          Profile
+                        </Link>
+                        <button
+                          onClick={() => {
+                            setIsMenuOpen(false);
+                            actions.logout();
+                          }}
+                          className="block w-full text-left text-sm font-paragraph hover:text-neonaccent transition-colors py-2 px-3 rounded-lg hover:bg-primary-foreground/10"
+                        >
+                          Sign Out
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <Link
+                          to="/signup"
+                          className="block text-sm font-paragraph hover:text-neonaccent transition-colors py-2 px-3 rounded-lg hover:bg-primary-foreground/10"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          Join DOTS
+                        </Link>
+                        <button
+                          className="block w-full text-left text-sm font-paragraph hover:text-neonaccent transition-colors py-2 px-3 rounded-lg hover:bg-primary-foreground/10"
+                          onClick={() => { 
+                            setIsMenuOpen(false); 
+                            actions.login(); 
+                          }}
+                        >
+                          Sign In
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </nav>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </header>
+
       {/* Main Content */}
-      <main>{children}</main>
+      <main className="flex-1">{children}</main>
+
       {/* Global Assistant (hidden on auth routes) */}
       {!(location.pathname === '/login' || location.pathname === '/signup') && (
         <AssistantWidget />
       )}
+
       {/* Footer */}
-      <footer className="bg-primary text-primary-foreground">
-        <div className="max-w-[120rem] mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <footer className="bg-primary text-primary-foreground mt-auto">
+        <div className="max-w-[120rem] mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <div className="w-8 h-8 bg-neonaccent rounded-full flex items-center justify-center">
-                  <span className="text-primary font-heading font-bold text-lg">D</span>
+            <div className="space-y-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-neonaccent rounded-full flex items-center justify-center">
+                  <Image
+                    src="https://static.wixstatic.com/media/d7d9fb_1971b31325f24d11889c078816a754de~mv2.png#originWidth=402&originHeight=288"
+                    alt="DOTS Logo"
+                    width={24}
+                    className="w-6 h-6 object-contain"
+                  />
                 </div>
                 <span className="font-heading font-bold text-xl">DOTS</span>
               </div>
-              <p className="font-paragraph text-sm text-primary-foreground/80">
+              <p className="font-paragraph text-sm text-primary-foreground/80 leading-relaxed max-w-xs">
                 Connecting Arts to Hearts - Bridging Indian artisans with the world through authentic handcrafted treasures.
               </p>
+              <div className="flex space-x-3">
+                {['facebook', 'instagram', 'twitter', 'youtube'].map((social) => (
+                  <a
+                    key={social}
+                    href="#"
+                    className="w-8 h-8 bg-primary-foreground/10 rounded-full flex items-center justify-center hover:bg-neonaccent hover:text-primary transition-all"
+                  >
+                    <span className="text-xs font-bold">{social[0].toUpperCase()}</span>
+                  </a>
+                ))}
+              </div>
             </div>
 
             <div>
               <h3 className="font-heading font-bold text-lg mb-4">Explore</h3>
-              <ul className="space-y-2">
+              <ul className="space-y-3">
                 <li><Link to="/discover" className="font-paragraph text-sm hover:text-neonaccent transition-colors">Discover Art</Link></li>
                 <li><Link to="/themes" className="font-paragraph text-sm hover:text-neonaccent transition-colors">Themes</Link></li>
                 <li><Link to="/custom-requests" className="font-paragraph text-sm hover:text-neonaccent transition-colors">Custom Requests</Link></li>
@@ -304,7 +376,7 @@ export default function Layout({ children }: LayoutProps) {
 
             <div>
               <h3 className="font-heading font-bold text-lg mb-4">Support</h3>
-              <ul className="space-y-2">
+              <ul className="space-y-3">
                 <li><Link to="/about" className="font-paragraph text-sm hover:text-neonaccent transition-colors">About Us</Link></li>
                 <li><Link to="/contact" className="font-paragraph text-sm hover:text-neonaccent transition-colors">Contact</Link></li>
                 <li><Link to="/help" className="font-paragraph text-sm hover:text-neonaccent transition-colors">Help Center</Link></li>
@@ -314,7 +386,7 @@ export default function Layout({ children }: LayoutProps) {
 
             <div>
               <h3 className="font-heading font-bold text-lg mb-4">For Artisans</h3>
-              <ul className="space-y-2">
+              <ul className="space-y-3">
                 <li><Link to="/sell" className="font-paragraph text-sm hover:text-neonaccent transition-colors">Become a Seller</Link></li>
                 <li><Link to="/artist-resources" className="font-paragraph text-sm hover:text-neonaccent transition-colors">Resources</Link></li>
                 <li><Link to="/success-stories" className="font-paragraph text-sm hover:text-neonaccent transition-colors">Success Stories</Link></li>
@@ -322,10 +394,23 @@ export default function Layout({ children }: LayoutProps) {
             </div>
           </div>
 
-          <div className="border-t border-primary-foreground/10 mt-8 pt-8 text-center">
-            <p className="font-paragraph text-sm text-primary-foreground/60">
-              © 2024 Dots - Connecting Arts to Hearts. All rights reserved.
-            </p>
+          <div className="border-t border-primary-foreground/10 mt-12 pt-8">
+            <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+              <p className="font-paragraph text-sm text-primary-foreground/60">
+                © 2024 DOTS - Connecting Arts to Hearts. All rights reserved.
+              </p>
+              <div className="flex space-x-6">
+                <Link to="/terms" className="font-paragraph text-sm text-primary-foreground/60 hover:text-neonaccent transition-colors">
+                  Terms
+                </Link>
+                <Link to="/privacy" className="font-paragraph text-sm text-primary-foreground/60 hover:text-neonaccent transition-colors">
+                  Privacy
+                </Link>
+                <Link to="/cookies" className="font-paragraph text-sm text-primary-foreground/60 hover:text-neonaccent transition-colors">
+                  Cookies
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </footer>

@@ -6,9 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function ContactPage() {
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -18,6 +21,7 @@ export default function ContactPage() {
     message: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   const contactInfo = [
     {
@@ -87,25 +91,52 @@ export default function ContactPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Basic validation
+    if (!formData.name || !formData.email || !formData.subject || !formData.category || !formData.message) {
+      toast({
+        title: "Please fill in all required fields",
+        description: "All fields marked with * are required.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     // Simulate form submission
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    try {
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
-    console.log('Contact form submitted:', formData);
+      console.log('Contact form submitted:', formData);
 
-    // Reset form
-    setFormData({
-      name: '',
-      email: '',
-      phone: '',
-      subject: '',
-      category: '',
-      message: ''
-    });
-    setIsSubmitting(false);
+      // Reset form
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        subject: '',
+        category: '',
+        message: ''
+      });
+      
+      setIsSubmitted(true);
+      toast({
+        title: "Message sent successfully!",
+        description: "We'll get back to you within 24 hours.",
+      });
 
-    alert('Thank you for contacting us! We\'ll get back to you within 24 hours.');
+      // Reset submitted state after 3 seconds
+      setTimeout(() => setIsSubmitted(false), 3000);
+    } catch (error) {
+      toast({
+        title: "Failed to send message",
+        description: "Please try again or contact us directly.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -209,17 +240,22 @@ export default function ContactPage() {
               <Card className="border-0 bg-neonaccent">
                 <CardContent className="p-6 text-center">
                   <MessageCircle className="w-12 h-12 text-primary mx-auto mb-4" />
-                  <h3 className="font-heading font-bold text-lg text-primary mb-2">
+                    {isSubmitted ? (
+                      <>
+                        <CheckCircle className="w-5 h-5 mr-2" />
+                        Message Sent!
+                      </>
+                    ) : isSubmitting ? (
                     Need Immediate Help?
-                  </h3>
+                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                   <p className="font-paragraph text-sm text-primary/80 mb-4">
                     Chat with our support team for instant assistance
                   </p>
                   <Button
                     size="sm"
                     className="bg-primary text-primary-foreground hover:bg-primary/90"
-                  >
-                    Start Live Chat
+                    disabled={isSubmitting || isSubmitted || !formData.name || !formData.email || !formData.subject || !formData.category || !formData.message}
+                    className="bg-neonaccent text-primary hover:bg-neonaccent/90 font-heading font-bold px-8 py-4 transition-all hover:scale-105"
                   </Button>
                 </CardContent>
               </Card>
