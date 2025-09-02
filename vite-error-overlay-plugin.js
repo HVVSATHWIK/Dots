@@ -115,19 +115,8 @@ class ErrorOverlay {
 	}
 
 	sendErrorToParent(err) {
-		// Send error to parent using @wix/framewire
-    import('@wix/framewire').then(({ sendMessageToParent, EditorEventMessages }) => {
-      sendMessageToParent({
-        type: EditorEventMessages.CLIENT_ERROR,
-        clientErrorData: {
-          errorType: 'error',
-          message: err?.message || 'Unknown error',
-          stack: err?.stack || 'No stack trace available',
-        }
-      });
-    }).catch(() => {
-      // ignore
-    });
+		// No-op to prevent import errors in stringified context
+		console.log('Error occurred:', err?.message || 'Unknown error');
 	}
 }
 
