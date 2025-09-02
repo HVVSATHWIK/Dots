@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,7 +12,7 @@ import { getDb } from '@/integrations/members/firebase';
 import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { useMember } from '@/integrations';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, EyeOff, Loader2, UserPlus } from 'lucide-react';
+import { Eye, EyeOff, Loader2, UserPlus, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

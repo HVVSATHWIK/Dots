@@ -21,6 +21,15 @@ export function hasFirebaseConfig(): boolean {
   );
 }
 
+// Log config status for debugging
+if (import.meta.env.DEV) {
+  console.log('[Firebase] Config status:', {
+    hasApiKey: !!(import.meta.env.PUBLIC_FB_API_KEY || import.meta.env.VITE_FB_API_KEY),
+    hasProjectId: !!(import.meta.env.PUBLIC_FB_PROJECT_ID || import.meta.env.VITE_FB_PROJECT_ID),
+    hasAppId: !!(import.meta.env.PUBLIC_FB_APP_ID || import.meta.env.VITE_FB_APP_ID),
+  });
+}
+
 export function getFirebaseApp() {
   return getApps().length ? getApps()[0]! : initializeApp(config);
 }
