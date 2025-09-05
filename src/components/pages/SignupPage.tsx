@@ -254,7 +254,7 @@ export default function SignupPage() {
                   >
                     <div className="font-heading font-bold text-primary mb-1">Buy Art</div>
                     <div className="font-paragraph text-sm text-primary/70">
-                      Discover and purchase authentic crafts
+                      Browse thousands of authentic handcrafted pieces from Indian artisans
                     </div>
                   </button>
                   <button
@@ -269,7 +269,7 @@ export default function SignupPage() {
                   >
                     <div className="font-heading font-bold text-primary mb-1">Sell Art</div>
                     <div className="font-paragraph text-sm text-primary/70">
-                      Share your crafts with the world
+                      Join our marketplace and sell your handcrafted creations globally
                     </div>
                   </button>
                 </div>

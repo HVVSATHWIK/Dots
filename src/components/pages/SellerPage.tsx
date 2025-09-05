@@ -97,8 +97,8 @@ export default function SellerPage() {
                 BECOME A SELLER
               </h1>
               <p className="font-paragraph text-xl mb-8 text-primary-foreground/90">
-                Join thousands of artisans who are sharing their craft with the world. 
-                Turn your passion into a thriving business on India's premier artisan marketplace.
+                Transform your traditional craft into a sustainable business. Join DOTS and connect 
+                with art lovers worldwide while preserving India's rich cultural heritage.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Button 
@@ -106,8 +106,8 @@ export default function SellerPage() {
                   className="bg-neonaccent text-primary hover:bg-neonaccent/90 font-heading font-bold"
                   asChild
                 >
-                  <Link to="/copilot">
-                    Start Selling Today
+                  <Link to="/signup">Get Started Now</Link>
+                    Join as Artisan
                     <ArrowRight className="w-5 h-5 ml-2" />
                   </Link>
                 </Button>
@@ -116,7 +116,7 @@ export default function SellerPage() {
                   variant="outline"
                   className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary"
                 >
-                  Learn More
+                  <Link to="/contact">Contact Support</Link>
                 </Button>
               </div>
             </motion.div>
@@ -397,7 +397,7 @@ export default function SellerPage() {
                   size="lg"
                   className="w-full bg-neonaccent text-primary hover:bg-neonaccent/90 font-heading font-bold"
                 >
-                  Submit Application
+                  Join as Artisan
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
               </form>
