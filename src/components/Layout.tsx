@@ -114,18 +114,24 @@ export default function Layout({ children }: LayoutProps) {
 
             {/* Navigation - Desktop */}
             <nav className="hidden lg:flex items-center space-x-6">
-              {navigation.slice(1, 5).map((item) => (
+              {navigation.slice(1, 5).map((item) => {
+                // Show limited navigation for non-authenticated users
+                if (!isAuthenticated && !['Discover', 'About', 'Contact'].includes(item.name)) {
+                  return null;
+                }
+                return (
                 <Link
                   key={item.name}
-                  to={item.href}
+                  to={!isAuthenticated && item.name === 'Discover' ? '/signup' : item.href}
                   className={`text-sm font-paragraph hover:text-neonaccent transition-colors relative group ${
                     location.pathname === item.href ? 'text-neonaccent' : ''
                   }`}
                 >
-                  {item.name}
+                  {!isAuthenticated && item.name === 'Discover' ? 'Preview Artworks' : item.name}
                   <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-neonaccent transition-all group-hover:w-full" />
                 </Link>
-              ))}
+                );
+              })}
             </nav>
 
             {/* Right Actions */}
@@ -264,16 +270,19 @@ export default function Layout({ children }: LayoutProps) {
               <div className="max-w-[120rem] mx-auto px-4 py-6">
                 <nav className="space-y-4">
                   {navigation.map((item) => (
+                    // Show limited navigation for non-authenticated users
+                    (!isAuthenticated && !['Home', 'Discover', 'About', 'Contact'].includes(item.name)) ? null : (
                     <Link
                       key={item.name}
-                      to={item.href}
+                      to={!isAuthenticated && item.name === 'Discover' ? '/signup' : item.href}
                       className={`block text-sm font-paragraph hover:text-neonaccent transition-colors py-2 px-3 rounded-lg hover:bg-primary-foreground/10 ${
                         location.pathname === item.href ? 'text-neonaccent bg-primary-foreground/10' : ''
                       }`}
                       onClick={() => setIsMenuOpen(false)}
                     >
-                      {item.name}
+                      {!isAuthenticated && item.name === 'Discover' ? 'Preview Artworks' : item.name}
                     </Link>
+                    )
                   ))}
                   
                   <div className="border-t border-primary-foreground/10 pt-4 mt-4">

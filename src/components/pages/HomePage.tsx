@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, ArrowRight, Star, Heart, ShoppingCart } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ArrowRight, Star, Heart, ShoppingCart, UserPlus, Store } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Image } from '@/components/ui/image';
 import { motion } from 'framer-motion';
+import { useMember } from '@/integrations';
 
 export default function HomePage() {
+  const { isAuthenticated, member } = useMember();
   // Start on the embroidery slide to match the reference hero
   const [currentSlide, setCurrentSlide] = useState(2);
 
@@ -166,16 +168,42 @@ export default function HomePage() {
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.6, duration: 0.8 }}
                 >
-                  <Button
-                    asChild
-                    size="lg"
-                    className="bg-neonaccent text-primary hover:bg-neonaccent/90 font-heading font-bold text-lg px-8 py-4 rounded-full"
-                  >
-                    <Link to="/discover">
-                      {slide.cta}
-                      <ArrowRight className="ml-2 w-5 h-5" />
-                    </Link>
-                  </Button>
+                  {!isAuthenticated ? (
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                      <Button
+                        asChild
+                        size="lg"
+                        className="bg-neonaccent text-primary hover:bg-neonaccent/90 font-heading font-bold text-lg px-8 py-4 rounded-full"
+                      >
+                        <Link to="/signup">
+                          <UserPlus className="mr-2 w-5 h-5" />
+                          Join as Buyer
+                        </Link>
+                      </Button>
+                      <Button
+                        asChild
+                        size="lg"
+                        variant="outline"
+                        className="border-white text-white hover:bg-white hover:text-primary font-heading font-bold text-lg px-8 py-4 rounded-full"
+                      >
+                        <Link to="/sell">
+                          <Store className="mr-2 w-5 h-5" />
+                          Become a Seller
+                        </Link>
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      asChild
+                      size="lg"
+                      className="bg-neonaccent text-primary hover:bg-neonaccent/90 font-heading font-bold text-lg px-8 py-4 rounded-full"
+                    >
+                      <Link to={member?.role === 'artisan' ? '/copilot' : '/discover'}>
+                        {member?.role === 'artisan' ? 'Go to Seller Tools' : 'Explore Artworks'}
+                        <ArrowRight className="ml-2 w-5 h-5" />
+                      </Link>
+                    </Button>
+                  )}
                 </motion.div>
               </div>
             </div>
@@ -209,15 +237,108 @@ export default function HomePage() {
           ))}
         </div>
       </section>
+
+      {/* Value Proposition Section - Only show to non-authenticated users */}
+      {!isAuthenticated && (
+        <section className="py-16 bg-primary text-primary-foreground">
+          <div className="max-w-[120rem] mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <h2 className="font-heading text-4xl font-bold mb-4 uppercase tracking-wide">
+                WHY CHOOSE DOTS?
+              </h2>
+              <p className="font-paragraph text-lg text-primary-foreground/90 max-w-2xl mx-auto">
+                The premier platform connecting authentic Indian artisans with art lovers worldwide
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="text-center"
+              >
+                <div className="w-16 h-16 bg-neonaccent rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-primary font-heading font-bold text-2xl">🎨</span>
+                </div>
+                <h3 className="font-heading font-bold text-xl mb-3">Authentic Craftsmanship</h3>
+                <p className="font-paragraph text-primary-foreground/80">
+                  Every piece is handcrafted by skilled artisans using traditional techniques passed down through generations
+                </p>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="text-center"
+              >
+                <div className="w-16 h-16 bg-neonaccent rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-primary font-heading font-bold text-2xl">🤝</span>
+                </div>
+                <h3 className="font-heading font-bold text-xl mb-3">Direct from Artisans</h3>
+                <p className="font-paragraph text-primary-foreground/80">
+                  Buy directly from artisans, ensuring fair compensation and supporting traditional crafts
+                </p>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="text-center"
+              >
+                <div className="w-16 h-16 bg-neonaccent rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-primary font-heading font-bold text-2xl">🌍</span>
+                </div>
+                <h3 className="font-heading font-bold text-xl mb-3">Global Reach</h3>
+                <p className="font-paragraph text-primary-foreground/80">
+                  Discover and purchase authentic Indian art from anywhere in the world with secure shipping
+                </p>
+              </motion.div>
+            </div>
+
+            <div className="text-center mt-12">
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button
+                  asChild
+                  size="lg"
+                  className="bg-neonaccent text-primary hover:bg-neonaccent/90 font-heading font-bold"
+                >
+                  <Link to="/signup">
+                    <UserPlus className="mr-2 w-5 h-5" />
+                    Start Shopping
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  size="lg"
+                  variant="outline"
+                  className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary font-heading font-bold"
+                >
+                  <Link to="/sell">
+                    <Store className="mr-2 w-5 h-5" />
+                    Become a Seller
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Categories Section */}
       <section className="py-16 bg-background">
         <div className="max-w-[120rem] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="font-heading text-4xl font-bold text-primary mb-4 uppercase tracking-wide">
-              EXPLORE BY CATEGORY
+              {isAuthenticated ? 'EXPLORE BY CATEGORY' : 'WHAT YOU CAN FIND'}
             </h2>
             <p className="text-lg max-w-2xl mx-auto font-paragraph text-primary/70 leading-relaxed">
-              Discover authentic Indian crafts organized by themes and occasions
+              {isAuthenticated 
+                ? 'Discover authentic Indian crafts organized by themes and occasions'
+                : 'Browse our diverse collection of authentic Indian handicrafts'
+              }
             </p>
           </div>
 
@@ -256,7 +377,10 @@ export default function HomePage() {
               FEATURED ARTWORKS
             </h2>
             <p className="text-lg max-w-2xl mx-auto text-primary/70 font-paragraph leading-relaxed">
-              Handpicked masterpieces from our talented artisan community
+              {isAuthenticated 
+                ? 'Handpicked masterpieces from our talented artisan community'
+                : 'Sample of the beautiful handcrafted pieces available on DOTS'
+              }
             </p>
           </div>
 
@@ -337,16 +461,21 @@ export default function HomePage() {
                         <Button
                           size="sm"
                           className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 font-heading font-medium"
+                          disabled={!isAuthenticated}
+                          onClick={() => !isAuthenticated && alert('Please sign up to add items to cart')}
                         >
                           <ShoppingCart className="w-4 h-4 mr-2" />
-                          Add to Cart
+                          {isAuthenticated ? 'Add to Cart' : 'Sign Up to Buy'}
                         </Button>
                         <Button
+                          asChild
                           size="sm"
                           variant="outline"
                           className="border-primary text-primary hover:bg-primary hover:text-primary-foreground font-heading font-medium"
                         >
-                          View
+                          <Link to={isAuthenticated ? `/product/${product.id}` : '/signup'}>
+                            {isAuthenticated ? 'View' : 'Sign Up'}
+                          </Link>
                         </Button>
                       </div>
                     </div>
@@ -363,14 +492,57 @@ export default function HomePage() {
               size="lg"
               className="border-primary text-primary hover:bg-primary hover:text-primary-foreground font-heading font-bold hover:scale-105 transition-transform"
             >
-              <Link to="/discover">
-                View All Products
+              <Link to={isAuthenticated ? "/discover" : "/signup"}>
+                {isAuthenticated ? 'View All Products' : 'Sign Up to Explore'}
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Link>
             </Button>
           </div>
         </div>
       </section>
+
+      {/* Call to Action for Non-Authenticated Users */}
+      {!isAuthenticated && (
+        <section className="py-16 bg-gradient-to-r from-neonaccent to-neonaccent/80">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <h2 className="font-heading text-3xl font-bold text-primary mb-4 uppercase tracking-wide">
+                Ready to Get Started?
+              </h2>
+              <p className="font-paragraph text-lg text-primary/80 mb-8 max-w-2xl mx-auto">
+                Join thousands of art lovers and artisans who are already part of the DOTS community. 
+                Whether you want to buy authentic crafts or sell your own creations, we have the perfect place for you.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button
+                  asChild
+                  size="lg"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 font-heading font-bold"
+                >
+                  <Link to="/signup">
+                    <UserPlus className="mr-2 w-5 h-5" />
+                    Join as Art Lover
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  size="lg"
+                  variant="outline"
+                  className="border-primary text-primary hover:bg-primary hover:text-primary-foreground font-heading font-bold"
+                >
+                  <Link to="/sell">
+                    <Store className="mr-2 w-5 h-5" />
+                    Become an Artisan
+                  </Link>
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+      )}
       
       {/* Action Cards */}
       <section className="py-16 bg-background">
@@ -387,14 +559,19 @@ export default function HomePage() {
                     Explore Art by Themes
                   </h3>
                   <p className="text-sm mb-6 text-primary-foreground/90 font-paragraph leading-relaxed">
-                    Discover curated collections for weddings, festivals, and special occasions
+                    {isAuthenticated 
+                      ? 'Discover curated collections for weddings, festivals, and special occasions'
+                      : 'See how our artworks can enhance your special occasions'
+                    }
                   </p>
                   <Button
                     asChild
                     variant="secondary"
                     className="bg-neonaccent text-primary hover:bg-neonaccent/90 font-heading font-bold hover:scale-105 transition-transform"
                   >
-                    <Link to="/themes">Explore Now</Link>
+                    <Link to={isAuthenticated ? "/themes" : "/signup"}>
+                      {isAuthenticated ? 'Explore Now' : 'Sign Up to Explore'}
+                    </Link>
                   </Button>
                 </CardContent>
               </Card>
@@ -411,14 +588,19 @@ export default function HomePage() {
                     Explore Traditional Art
                   </h3>
                   <p className="text-sm mb-6 text-primary/80 font-paragraph leading-relaxed">
-                    Immerse yourself in centuries-old crafting traditions from across India
+                    {isAuthenticated
+                      ? 'Immerse yourself in centuries-old crafting traditions from across India'
+                      : 'Preview the rich heritage of Indian traditional crafts'
+                    }
                   </p>
                   <Button
                     asChild
                     variant="secondary"
                     className="bg-primary text-primary-foreground hover:bg-primary/90 font-heading font-bold hover:scale-105 transition-transform"
                   >
-                    <Link to="/discover?category=traditional">Explore Now</Link>
+                    <Link to={isAuthenticated ? "/discover?category=traditional" : "/signup"}>
+                      {isAuthenticated ? 'Explore Now' : 'Sign Up to Explore'}
+                    </Link>
                   </Button>
                 </CardContent>
               </Card>
@@ -435,13 +617,18 @@ export default function HomePage() {
                     Discover Section
                   </h3>
                   <p className="text-sm mb-6 text-primary/70 font-paragraph leading-relaxed">
-                    Browse our complete collection of authentic handcrafted artworks
+                    {isAuthenticated
+                      ? 'Browse our complete collection of authentic handcrafted artworks'
+                      : 'Get a glimpse of our extensive artisan marketplace'
+                    }
                   </p>
                   <Button
                     asChild
                     className="bg-primary text-primary-foreground hover:bg-primary/90 font-heading font-bold hover:scale-105 transition-transform"
                   >
-                    <Link to="/discover">Explore Now</Link>
+                    <Link to={isAuthenticated ? "/discover" : "/signup"}>
+                      {isAuthenticated ? 'Explore Now' : 'Sign Up to Browse'}
+                    </Link>
                   </Button>
                 </CardContent>
               </Card>
@@ -458,13 +645,18 @@ export default function HomePage() {
                     Join Our Community
                   </h3>
                   <p className="text-sm mb-6 text-primary/70 font-paragraph leading-relaxed">
-                    Connect with artisans, share ideas, and learn about Indian craft traditions
+                    {isAuthenticated
+                      ? 'Connect with artisans, share ideas, and learn about Indian craft traditions'
+                      : 'Be part of a vibrant community of art lovers and creators'
+                    }
                   </p>
                   <Button
                     asChild
                     className="bg-neonaccent text-primary hover:bg-neonaccent/90 font-heading font-bold hover:scale-105 transition-transform"
                   >
-                    <Link to="/community">Join Now</Link>
+                    <Link to={isAuthenticated ? "/community" : "/signup"}>
+                      {isAuthenticated ? 'Join Now' : 'Sign Up to Join'}
+                    </Link>
                   </Button>
                 </CardContent>
               </Card>
