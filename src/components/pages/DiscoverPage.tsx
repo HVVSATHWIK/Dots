@@ -11,8 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { motion } from 'framer-motion';
 import { useMember } from '@/integrations';
+import { useMember } from '@/integrations';
 
 export default function DiscoverPage() {
+  const { isAuthenticated } = useMember();
   const { isAuthenticated } = useMember();
   const [searchParams, setSearchParams] = useSearchParams();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -351,6 +353,67 @@ export default function DiscoverPage() {
     setSearchParams({});
   };
 
+  // Show preview message for non-authenticated users
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="max-w-[120rem] mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <h1 className="font-heading text-4xl font-bold text-primary mb-4 uppercase tracking-wide">
+              DISCOVER AUTHENTIC ARTWORKS
+            </h1>
+            <p className="font-paragraph text-lg text-primary/70 mb-8 max-w-2xl mx-auto">
+              Join DOTS to explore thousands of authentic handcrafted pieces from talented Indian artisans. 
+              Sign up now to start your journey into the world of traditional Indian crafts.
+            </p>
+            
+            {/* Preview Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12 opacity-60 pointer-events-none">
+              {allProducts.slice(0, 8).map((product, index) => (
+                <motion.div
+                  key={product.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                >
+                  <Card className="border-0">
+                    <CardContent className="p-0">
+                      <div className="relative overflow-hidden rounded-t-lg">
+                        <Image
+                          src={product.image}
+                          alt={product.name}
+                          width={400}
+                          className="w-full h-48 object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/20" />
+                      </div>
+                      <div className="p-4">
+                        <h3 className="font-heading font-bold text-lg text-primary mb-1 line-clamp-1">
+                          {product.name}
+                        </h3>
+                        <p className="font-paragraph text-sm text-primary/60 mb-2">
+                          by {product.artist}
+                        </p>
+                        <div className="flex items-center justify-between">
+                          <span className="font-heading font-bold text-lg text-primary">
+                            ₹{product.price.toLocaleString()}
+                          </span>
+                          <div className="flex items-center">
+                            <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                            <span className="font-paragraph text-sm text-primary ml-1">
+                              {product.rating}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </div>
   // Show preview message for non-authenticated users
   if (!isAuthenticated) {
     return (

@@ -120,6 +120,11 @@ export default function Layout({ children }: LayoutProps) {
                   return null;
                 }
                 return (
+                // Show limited navigation for non-authenticated users
+                if (!isAuthenticated && !['Discover', 'About', 'Contact'].includes(item.name)) {
+                  return null;
+                }
+                return (
                 <Link
                   key={item.name}
                   to={!isAuthenticated && item.name === 'Discover' ? '/signup' : item.href}
@@ -131,6 +136,7 @@ export default function Layout({ children }: LayoutProps) {
                   <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-neonaccent transition-all group-hover:w-full" />
                 </Link>
                 );
+              })}
               })}
             </nav>
 
@@ -272,6 +278,8 @@ export default function Layout({ children }: LayoutProps) {
                   {navigation.map((item) => (
                     // Show limited navigation for non-authenticated users
                     (!isAuthenticated && !['Home', 'Discover', 'About', 'Contact'].includes(item.name)) ? null : (
+                    // Show limited navigation for non-authenticated users
+                    (!isAuthenticated && !['Home', 'Discover', 'About', 'Contact'].includes(item.name)) ? null : (
                     <Link
                       key={item.name}
                       to={!isAuthenticated && item.name === 'Discover' ? '/signup' : item.href}
@@ -282,6 +290,7 @@ export default function Layout({ children }: LayoutProps) {
                     >
                       {!isAuthenticated && item.name === 'Discover' ? 'Preview Artworks' : item.name}
                     </Link>
+                    )
                     )
                   ))}
                   
