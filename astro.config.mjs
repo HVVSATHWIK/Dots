@@ -23,9 +23,16 @@ export default defineConfig({
           if (command === "dev") {
             injectScript(
               "page",
-              `import { init } from "@wix/framewire";
-              console.log("Framewire initialized");
-              init();`,
+              `try {
+                import("@wix/framewire").then(({ init }) => {
+                  console.log("Framewire initialized");
+                  init();
+                }).catch((err) => {
+                  console.warn("Framewire initialization failed:", err);
+                });
+              } catch (err) {
+                console.warn("Framewire import failed:", err);
+              }`,
             );
           }
         },
