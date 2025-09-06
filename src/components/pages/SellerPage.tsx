@@ -389,7 +389,7 @@ export default function SellerPage() {
                 <div className="flex items-center space-x-2">
                   <input type="checkbox" id="terms" className="rounded" />
                   <label htmlFor="terms" className="font-paragraph text-sm text-primary/70">
-                    I agree to the <Link to="/terms" className="text-neonaccent hover:underline">Terms of Service</Link> and <Link to="/privacy" className="text-neonaccent hover:underline">Privacy Policy</Link>
+                    I agree to the <Link to="/terms" className="text-neonaccent hover:underline">Terms of Service</Link> and <Link to="/privacy" className=\"text-neonaccent hover:underline">Privacy Policy</Link>
                   </label>
                 </div>
 
