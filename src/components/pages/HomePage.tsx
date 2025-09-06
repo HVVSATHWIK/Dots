@@ -7,10 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Image } from '@/components/ui/image';
 import { motion } from 'framer-motion';
 import { useMember } from '@/integrations';
-import { useMember } from '@/integrations';
 
 export default function HomePage() {
-  const { isAuthenticated, member } = useMember();
   const { isAuthenticated, member } = useMember();
   // Start on the embroidery slide to match the reference hero
   const [currentSlide, setCurrentSlide] = useState(2);

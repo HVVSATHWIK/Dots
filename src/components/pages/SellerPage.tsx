@@ -106,7 +106,8 @@ export default function SellerPage() {
                   className="bg-neonaccent text-primary hover:bg-neonaccent/90 font-heading font-bold"
                   asChild
                 >
-                  <Link to="/signup">Get Started Now</Link>
+                  <Link to="/signup">
+                    Get Started Now
                     Join as Artisan
                     <ArrowRight className="w-5 h-5 ml-2" />
                   </Link>
