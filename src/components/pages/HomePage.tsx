@@ -655,9 +655,8 @@ export default function HomePage() {
                     className="bg-neonaccent text-primary hover:bg-neonaccent/90 font-heading font-bold hover:scale-105 transition-transform"
                   >
                     <Link to={isAuthenticated ? "/community" : "/signup"}>
-                      {isAuthenticated ? 'Join Now' : 'Sign Up to Join'}
                     </Link>
-                  </Button>
+                    </Link>
                 </CardContent>
               </Card>
             </motion.div>
