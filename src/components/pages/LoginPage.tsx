@@ -8,7 +8,7 @@ import { getFirebaseAuth } from '@/integrations/members/firebase';
 import { browserLocalPersistence, browserSessionPersistence, setPersistence, signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { useMember } from '@/integrations';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, EyeOff, Loader2, LogIn, Mail } from 'lucide-react';
+import { Eye, EyeOff, Loader2, LogIn, Mail, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 

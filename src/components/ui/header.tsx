@@ -27,7 +27,7 @@ import { useMember } from '@/integrations';
 
 export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { isAuthenticated, member, logout } = useMember();
+  const { isAuthenticated, member, actions } = useMember();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -41,7 +41,7 @@ export function Header() {
 
   const handleLogout = async () => {
     try {
-      await logout();
+      await actions.logout();
       navigate('/');
     } catch (error) {
       console.error('Logout failed:', error);
@@ -114,8 +114,8 @@ export function Header() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
                     <div className="px-2 py-2">
-                      <p className="font-heading text-sm font-medium">{member?.firstName} {member?.lastName}</p>
-                      <p className="font-paragraph text-xs text-muted-foreground">{member?.email}</p>
+                      <p className="font-heading text-sm font-medium">{member?.contact?.firstName} {member?.contact?.lastName}</p>
+                      <p className="font-paragraph text-xs text-muted-foreground">{member?.loginEmail}</p>
                       {member?.role && (
                         <Badge variant="outline" className="mt-1 text-xs">
                           {member.role === 'artisan' ? 'Artisan' : 'Art Lover'}
