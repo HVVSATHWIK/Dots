@@ -1,22 +1,39 @@
 ---
-import { SEO } from '@wix/seo/components';
-import { loadSEOTagsServiceConfig } from '@wix/seo/services';
 import { Head } from "@/components/Head";
 import AppRouter from "@/components/Router";
 import "@/styles/global.css";
 
-const seoTagsServiceConfig = await loadSEOTagsServiceConfig({
-  pageUrl: Astro.url.href,
-  itemData: {
-    pageName: 'Home',
-  },
-});
+// Lazy SEO objects (must remain after static imports so Astro sees AppRouter import)
+let SEO: any = null;
+let seoTagsServiceConfig: any = null;
+if (import.meta.env.PROD) {
+  // Only attempt in production; local dev not critical
+  try {
+    const mod = await import('@wix/seo/components');
+    SEO = mod.SEO;
+    const svc = await import('@wix/seo/services');
+    try {
+      seoTagsServiceConfig = await svc.loadSEOTagsServiceConfig({
+        pageUrl: Astro.url.href,
+        itemData: { pageName: 'Home' },
+      });
+    } catch (e) {
+      console.warn('[seo] Failed to load SEO tag config:', (e as any)?.message);
+    }
+  } catch (e) {
+    console.warn('[seo] Wix SEO components unavailable:', (e as any)?.message);
+  }
+}
 ---
 
 <html lang="en" class="w-full h-full">
   <head>
     <Head />
-    <SEO.Tags seoTagsServiceConfig={seoTagsServiceConfig} slot="seo-tags" />
+    {SEO && seoTagsServiceConfig ? (
+      <SEO.Tags seoTagsServiceConfig={seoTagsServiceConfig} slot="seo-tags" />
+    ) : (
+      <meta name="description" content="Dots – Connecting Arts to Hearts" />
+    )}
   </head>
   <body class="w-full h-full">
     <div id="root" class="w-full h-full">

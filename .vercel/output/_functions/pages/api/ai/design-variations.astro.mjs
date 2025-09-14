@@ -17,7 +17,7 @@ const POST = async ({
     const form = await request.formData();
     const prompt = String(form.get("prompt") ?? "Refine background and lighting, keep product intact.");
     const baseImage = form.get("baseImage");
-    const apiKey = undefined                               ?? process.env.GEMINI_API_KEY;
+    const apiKey = "AIzaSyBaTLF0Z0Krem0WO0yumMfNO3GfJ-tTR2A";
     if (!apiKey || !(baseImage instanceof File)) {
       const json2 = {
         variations: ["https://static.wixstatic.com/media/d7d9fb_6da1e82469934cfb897017b6350736d1~mv2.png?originWidth=1920&originHeight=1024", "https://static.wixstatic.com/media/d7d9fb_a252aa7a948b46c6b4243cff0059d330~mv2.png?originWidth=1920&originHeight=1024", "https://static.wixstatic.com/media/d7d9fb_3b86be1391f746a093ff78ded0b98a08~mv2.png?originWidth=1920&originHeight=1024", "https://static.wixstatic.com/media/d7d9fb_ae1d196d955243b49e7f585bf4e4532e~mv2.png?originWidth=1920&originHeight=1024"]
@@ -30,7 +30,7 @@ const POST = async ({
       });
     }
     const genAI = new GoogleGenerativeAI(apiKey);
-    const modelName = undefined                             || process.env.GEMINI_MODEL || "gemini-1.5-flash";
+    const modelName = "gemini-1.5-flash";
     const model = genAI.getGenerativeModel({
       model: modelName
     });

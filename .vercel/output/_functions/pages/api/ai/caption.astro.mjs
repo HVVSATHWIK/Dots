@@ -3,7 +3,7 @@ export { renderers } from '../../../renderers.mjs';
 
 const prerender = false;
 function pickModel(model) {
-  return process.env.GEMINI_MODEL || "gemini-1.5-flash";
+  return "gemini-1.5-flash";
 }
 function toBase64(ab) {
   if (typeof Buffer !== "undefined") return Buffer.from(ab).toString("base64");
@@ -37,34 +37,9 @@ const POST = async ({
 }) => {
   try {
     const ct = request.headers.get("content-type") || "";
-    const apiKey = undefined                               ?? process.env.GEMINI_API_KEY;
+    const apiKey = "AIzaSyBaTLF0Z0Krem0WO0yumMfNO3GfJ-tTR2A";
     const modelName = pickModel(null);
-    if (!apiKey) {
-      const stub = {
-        title: "Handmade Artisan Bowl",
-        shortCaption: "A hand-thrown ceramic bowl with natural glaze and rustic finish.",
-        tags: ["ceramic", "handmade", "bowl", "rustic"],
-        materials: ["clay", "natural glaze"],
-        techniques: ["wheel-thrown", "kiln-fired"],
-        colors: ["earth brown", "sage"],
-        style: "minimal, earthy",
-        suggestedPriceRange: {
-          min: 1200,
-          max: 2200,
-          currency: "INR"
-        },
-        confidence: 0.4
-      };
-      return new Response(JSON.stringify({
-        captions: [stub],
-        note: "No GEMINI_API_KEY set; returning stub."
-      }), {
-        status: 200,
-        headers: {
-          "content-type": "application/json"
-        }
-      });
-    }
+    if (!apiKey) ;
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
       model: modelName

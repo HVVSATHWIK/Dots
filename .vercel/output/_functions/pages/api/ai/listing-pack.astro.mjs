@@ -33,12 +33,10 @@ const POST = async ({
     for (const [key, val] of form.entries()) {
       if (key.startsWith("images[") && val instanceof File) images.push(val);
     }
-    const apiKey = undefined                               ?? process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error("Server missing GEMINI_API_KEY");
-    }
+    const apiKey = "AIzaSyBaTLF0Z0Krem0WO0yumMfNO3GfJ-tTR2A";
+    if (!apiKey) ;
     const genAI = new GoogleGenerativeAI(apiKey);
-    const modelName = undefined                             || process.env.GEMINI_MODEL || "gemini-1.5-flash";
+    const modelName = "gemini-1.5-flash";
     const model = genAI.getGenerativeModel({
       model: modelName
     });

@@ -2,7 +2,7 @@ export { renderers } from '../../../renderers.mjs';
 
 const prerender = false;
 function looksImageCapable(model) {
-  return !!model && /image|imagen/i.test(model);
+  return true && /image|imagen/i.test(model);
 }
 const POST = async ({
   request
@@ -20,8 +20,8 @@ const POST = async ({
       prompt,
       model
     } = await request.json();
-    const apiKey = undefined                               ?? process.env.GEMINI_API_KEY;
-    const configuredModel = model || undefined                            || process.env.IMAGE_MODEL || undefined                             || process.env.GEMINI_MODEL;
+    const apiKey = "AIzaSyBaTLF0Z0Krem0WO0yumMfNO3GfJ-tTR2A";
+    const configuredModel = model || undefined                            || process.env.IMAGE_MODEL || "gemini-1.5-flash";
     const project = process.env.GCP_PROJECT || undefined                           ;
     const location = process.env.GCP_LOCATION || undefined                             || "us-central1";
     if (!apiKey || !looksImageCapable(configuredModel) || !project) {

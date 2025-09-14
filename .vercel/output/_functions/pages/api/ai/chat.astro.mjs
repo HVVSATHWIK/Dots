@@ -24,20 +24,10 @@ You are the DOTS Assistant.
       role: "system",
       content: systemPrompt
     }, ...incoming];
-    const apiKey = undefined                               ?? process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      const lastUser = [...effectiveMessages].reverse().find((m2) => m2.role === "user");
-      return new Response(JSON.stringify({
-        reply: `Stubbed reply: ${lastUser?.content ?? "Hello"}`
-      }), {
-        status: 200,
-        headers: {
-          "content-type": "application/json"
-        }
-      });
-    }
+    const apiKey = "AIzaSyBaTLF0Z0Krem0WO0yumMfNO3GfJ-tTR2A";
+    if (!apiKey) ;
     const genAI = new GoogleGenerativeAI(apiKey);
-    const modelName = model || undefined                             || process.env.GEMINI_MODEL || "gemini-1.5-flash";
+    const modelName = model || "gemini-1.5-flash";
     const m = genAI.getGenerativeModel({
       model: modelName
     });

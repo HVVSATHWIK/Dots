@@ -1,8 +1,6 @@
 /* empty css                                  */
 import { e as createComponent, f as createAstro, k as renderComponent, l as renderHead, r as renderTemplate } from '../chunks/astro/server_39TLRhHP.mjs';
 import 'kleur/colors';
-import { SEO } from '@wix/seo/components';
-import { loadSEOTagsServiceConfig } from '@wix/seo/services';
 import { jsxs, Fragment, jsx } from 'react/jsx-runtime';
 export { renderers } from '../renderers.mjs';
 
@@ -18,15 +16,27 @@ const $$Astro = createAstro();
 const $$ = createComponent(async ($$result, $$props, $$slots) => {
   const Astro2 = $$result.createAstro($$Astro, $$props, $$slots);
   Astro2.self = $$;
-  const seoTagsServiceConfig = await loadSEOTagsServiceConfig({
-    pageUrl: Astro2.url.href,
-    itemData: {
-      pageName: "Home"
+  let SEO = null;
+  let seoTagsServiceConfig = null;
+  {
+    try {
+      const mod = await import('@wix/seo/components');
+      SEO = mod.SEO;
+      const svc = await import('@wix/seo/services');
+      try {
+        seoTagsServiceConfig = await svc.loadSEOTagsServiceConfig({
+          pageUrl: Astro2.url.href,
+          itemData: { pageName: "Home" }
+        });
+      } catch (e) {
+        console.warn("[seo] Failed to load SEO tag config:", e?.message);
+      }
+    } catch (e) {
+      console.warn("[seo] Wix SEO components unavailable:", e?.message);
     }
-  });
-  return renderTemplate`<html lang="en" class="w-full h-full"> <head>${renderComponent($$result, "Head", Head, {})}${renderComponent($$result, "SEO.Tags", SEO.Tags, { "seoTagsServiceConfig": seoTagsServiceConfig, "slot": "seo-tags" })}${renderHead()}</head> <body class="w-full h-full"> <div id="root" class="w-full h-full"> ${renderComponent($$result, "AppRouter", null, { "client:only": "react", "client:component-hydration": "only", "client:component-path": "@/components/Router", "client:component-export": "default" })} </div> </body></html>`;
+  }
+  return renderTemplate`<html lang="en" class="w-full h-full"> <head>${renderComponent($$result, "Head", Head, {})}${SEO && seoTagsServiceConfig ? renderTemplate`${renderComponent($$result, "SEO.Tags", SEO.Tags, { "seoTagsServiceConfig": seoTagsServiceConfig, "slot": "seo-tags" })}` : renderTemplate`<meta name="description" content="Dots – Connecting Arts to Hearts">`}${renderHead()}</head> <body class="w-full h-full"> <div id="root" class="w-full h-full"> ${renderComponent($$result, "AppRouter", null, { "client:only": "react", "client:component-hydration": "only", "client:component-path": "@/components/Router", "client:component-export": "default" })} </div> </body></html>`;
 }, "C:/Users/Veerendranath/OneDrive/Documents/Hackathons/GenAI Exchange Hackathon/Work/Dots/src/pages/[...slug].astro", void 0);
-
 const $$file = "C:/Users/Veerendranath/OneDrive/Documents/Hackathons/GenAI Exchange Hackathon/Work/Dots/src/pages/[...slug].astro";
 const $$url = "/[...slug]";
 
