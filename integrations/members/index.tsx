@@ -93,11 +93,19 @@ export function MemberProvider({ children }: { children: React.ReactNode }) {
               const db = getDb();
               const userDoc = await getDoc(doc(db, 'users', u.uid));
               const existingRole = (userDoc.exists() ? (userDoc.data() as any)?.role : null);
+
               if (!hasChosen && !existingRole && !sessionStorage.getItem('dots_skip_role_prompt')) {
                 // Avoid infinite loops: only redirect if not already on chooser, login, or signup
                 if (!['/choose-role', '/login', '/signup'].includes(window.location.pathname)) {
                   window.history.replaceState({}, '', '/choose-role');
                   return; // Don't continue with normal auth flow
+                }
+              } else if (existingRole) {
+                // User has a role, redirect to appropriate dashboard
+                const dashboardPath = existingRole === 'buyer' ? '/buyer/dashboard' : '/artisan/dashboard';
+                if (!['/buyer/dashboard', '/artisan/dashboard', '/dashboard'].includes(window.location.pathname)) {
+                  window.history.replaceState({}, '', dashboardPath);
+                  return;
                 }
               }
             } catch { /* ignore */ }

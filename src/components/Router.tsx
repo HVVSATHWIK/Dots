@@ -1,5 +1,5 @@
 ﻿import { MemberProvider } from '@/integrations';
-import { Routes, Route, Navigate, BrowserRouter } from 'react-router-dom';
+import { Routes, Route, Navigate, BrowserRouter, useNavigate } from 'react-router-dom';
 import { ScrollToTop } from '@/lib/scroll-to-top';
 import { MemberProtectedRoute } from '@/components/ui/member-protected-route';
 import { ToastProvider } from '@/components/ui/toast-provider';
@@ -20,11 +20,41 @@ import CopilotPage from '@/components/pages/CopilotPage';
 import { RoleGuard } from '@/components/ui/role-guard';
 import LoginPage from '@/components/pages/LoginPage';
 import SignupPage from '@/components/pages/SignupPage';
-import DashboardPage from '@/components/pages/DashboardPage';
+import BuyerDashboard from '@/components/pages/BuyerDashboard';
+import ArtisanDashboard from '@/components/pages/ArtisanDashboard';
 import ProfileSetupPage from '@/components/pages/ProfileSetupPage';
 import RoleSelectPage from '@/components/pages/RoleSelectPage';
 import AnalyticsPage from '@/components/pages/AnalyticsPage';
 import PricingOptimizerPage from '@/components/pages/PricingOptimizerPage';
+import { useMember } from '@/integrations';
+import { useEffect } from 'react';
+import '@/i18n/config'; // Initialize i18n
+
+// Component to redirect users to role-specific dashboards
+function DashboardRedirect() {
+  const { member } = useMember();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (member?.role === 'buyer') {
+      navigate('/buyer/dashboard', { replace: true });
+    } else if (member?.role === 'artisan') {
+      navigate('/artisan/dashboard', { replace: true });
+    } else {
+      // If no role is set, redirect to role selection
+      navigate('/choose-role', { replace: true });
+    }
+  }, [member, navigate]);
+
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+        <p className="font-paragraph text-primary/70">Loading your dashboard...</p>
+      </div>
+    </div>
+  );
+}
 
 export default function AppRouter() {
   return (
@@ -85,7 +115,21 @@ export default function AppRouter() {
 
               <Route path='/dashboard' element={
                 <MemberProtectedRoute messageToSignIn='Sign in to access your dashboard'>
-                  <DashboardPage />
+                  <DashboardRedirect />
+                </MemberProtectedRoute>
+              } />
+              <Route path='/buyer/dashboard' element={
+                <MemberProtectedRoute messageToSignIn='Sign in to access your dashboard'>
+                  <RoleGuard allow={['buyer']} fallback='/dashboard'>
+                    <BuyerDashboard />
+                  </RoleGuard>
+                </MemberProtectedRoute>
+              } />
+              <Route path='/artisan/dashboard' element={
+                <MemberProtectedRoute messageToSignIn='Sign in to access your dashboard'>
+                  <RoleGuard allow={['artisan']} fallback='/dashboard'>
+                    <ArtisanDashboard />
+                  </RoleGuard>
                 </MemberProtectedRoute>
               } />
               <Route path='/profile/setup' element={

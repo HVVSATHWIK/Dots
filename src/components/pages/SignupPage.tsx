@@ -143,7 +143,7 @@ export default function SignupPage() {
       }
 
       // Redirect based on role
-      nav(role === 'artisan' ? '/profile/setup' : '/dashboard', { replace: true });
+      nav(role === 'artisan' ? '/profile/setup' : '/buyer/dashboard', { replace: true });
     } catch (e: any) {
       const errorMessage = mapError(e);
       setErrors({ submit: errorMessage });
@@ -171,7 +171,7 @@ export default function SignupPage() {
 
     sessionStorage.setItem('dots_role', role);
     sessionStorage.setItem('dots_role_chosen', '1'); // Mark that user explicitly chose a role
-    sessionStorage.setItem('dots_next', role === 'artisan' ? '/profile/setup' : '/dashboard');
+    sessionStorage.setItem('dots_next', role === 'artisan' ? '/profile/setup' : '/buyer/dashboard');
     setLoading(true);
     setErrors({});
 
@@ -181,7 +181,7 @@ export default function SignupPage() {
       );
 
       await Promise.race([actions.login(), timeout]);
-      nav(role === 'artisan' ? '/profile/setup' : '/dashboard', { replace: true });
+      nav(role === 'artisan' ? '/profile/setup' : '/buyer/dashboard', { replace: true });
     } catch (e: any) {
       const code: string = e?.code || '';
       if (code.includes('popup-') || e?.message === 'timeout') {

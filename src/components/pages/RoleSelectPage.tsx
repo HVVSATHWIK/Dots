@@ -13,9 +13,9 @@ export default function RoleSelectPage() {
   // If we already have a role and (if artisan) maybe profile complete in future, skip.
   useEffect(() => {
     if (member?.role === 'artisan') {
-      navigate('/dashboard', { replace: true });
+      navigate('/artisan/dashboard', { replace: true });
     } else if (member?.role === 'buyer') {
-      // If explicitly buyer doc exists, skip selection (we could allow revisit by query param later)
+      navigate('/buyer/dashboard', { replace: true });
     }
   }, [member?.role]);
 
@@ -25,11 +25,11 @@ export default function RoleSelectPage() {
     sessionStorage.setItem('dots_role_chosen', '1'); // Mark that user explicitly chose a role
     // If authenticated already, force a soft reload to trigger merge in provider logic.
     if (isAuthenticated) {
-      // Redirect logic: if artisan -> profile setup; if buyer -> dashboard
+      // Redirect logic: if artisan -> profile setup; if buyer -> buyer dashboard
       if (role === 'artisan') {
         navigate('/profile/setup');
       } else {
-        navigate('/dashboard');
+        navigate('/buyer/dashboard');
       }
     } else {
       navigate('/signup');

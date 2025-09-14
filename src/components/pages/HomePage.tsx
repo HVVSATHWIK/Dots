@@ -175,7 +175,7 @@ export default function HomePage() {
                         size="lg"
                         className="bg-neonaccent text-primary hover:bg-neonaccent/90 font-heading font-bold text-lg px-8 py-4 rounded-full"
                       >
-                        <Link to="/signup">
+                        <Link to="/choose-role">
                           <UserPlus className="mr-2 w-5 h-5" />
                           Join as Buyer
                         </Link>
@@ -496,7 +496,7 @@ export default function HomePage() {
               size="lg"
               className="border-primary text-primary hover:bg-primary hover:text-primary-foreground font-heading font-bold hover:scale-105 transition-transform"
             >
-              <Link to={isAuthenticated ? "/discover" : "/signup"}>
+              <Link to={isAuthenticated ? "/discover" : "/choose-role"}>
                 {isAuthenticated ? 'View All Products' : 'Sign Up to Explore'}
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Link>
@@ -526,7 +526,7 @@ export default function HomePage() {
                   size="lg"
                   className="bg-primary text-primary-foreground hover:bg-primary/90 font-heading font-bold"
                 >
-                  <Link to="/signup">
+                  <Link to="/choose-role">
                     <UserPlus className="mr-2 w-5 h-5" />
                     Join as Art Lover
                   </Link>
@@ -573,7 +573,7 @@ export default function HomePage() {
                     variant="secondary"
                     className="bg-neonaccent text-primary hover:bg-neonaccent/90 font-heading font-bold hover:scale-105 transition-transform"
                   >
-                    <Link to={isAuthenticated ? "/themes" : "/signup"}>
+                    <Link to={isAuthenticated ? "/themes" : "/choose-role"}>
                       {isAuthenticated ? 'Explore Now' : 'Sign Up to Explore'}
                     </Link>
                   </Button>
@@ -602,7 +602,7 @@ export default function HomePage() {
                     variant="secondary"
                     className="bg-primary text-primary-foreground hover:bg-primary/90 font-heading font-bold hover:scale-105 transition-transform"
                   >
-                    <Link to={isAuthenticated ? "/discover?category=traditional" : "/signup"}>
+                    <Link to={isAuthenticated ? "/discover?category=traditional" : "/choose-role"}>
                       {isAuthenticated ? 'Explore Now' : 'Sign Up to Explore'}
                     </Link>
                   </Button>
@@ -630,7 +630,7 @@ export default function HomePage() {
                     asChild
                     className="bg-primary text-primary-foreground hover:bg-primary/90 font-heading font-bold hover:scale-105 transition-transform"
                   >
-                    <Link to={isAuthenticated ? "/discover" : "/signup"}>
+                    <Link to={isAuthenticated ? "/discover" : "/choose-role"}>
                       {isAuthenticated ? 'Explore Now' : 'Sign Up to Browse'}
                     </Link>
                   </Button>
@@ -658,7 +658,7 @@ export default function HomePage() {
                     asChild
                     className="bg-neonaccent text-primary hover:bg-neonaccent/90 font-heading font-bold hover:scale-105 transition-transform"
                   >
-                    <Link to={isAuthenticated ? "/community" : "/signup"}>
+                    <Link to={isAuthenticated ? "/community" : "/choose-role"}>
                       Join Our Community
                     </Link>
                   </Button>

@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/ui/logo';
+import { LanguageSelector } from '@/components/ui/language-selector';
 import { 
   Menu, 
   X, 
@@ -23,19 +24,21 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from '@/components/ui/badge';
 import { useMember } from '@/integrations';
+import { useTranslation } from 'react-i18next';
 
 export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { isAuthenticated, member, actions } = useMember();
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const navigation = [
-    { name: 'Home', href: '/', current: location.pathname === '/' },
-    { name: 'Discover', href: '/discover', current: location.pathname === '/discover' },
-    { name: 'Themes', href: '/themes', current: location.pathname === '/themes' },
-    { name: 'Community', href: '/community', current: location.pathname === '/community' },
-    { name: 'About', href: '/about', current: location.pathname === '/about' },
+    { name: t('nav.home'), href: '/', current: location.pathname === '/' },
+    { name: t('nav.discover'), href: '/discover', current: location.pathname === '/discover' },
+    { name: t('nav.themes'), href: '/themes', current: location.pathname === '/themes' },
+    { name: t('nav.community'), href: '/community', current: location.pathname === '/community' },
+    { name: t('nav.about'), href: '/about', current: location.pathname === '/about' },
   ];
 
   const handleLogout = async () => {
@@ -73,6 +76,9 @@ export function Header() {
 
           {/* Right side - Auth & User Actions */}
           <div className="flex items-center space-x-4">
+            {/* Language Selector */}
+            <LanguageSelector />
+
             {/* Search - Desktop only */}
             <Button variant="ghost" size="sm" className="hidden md:flex">
               <Search className="w-4 h-4" />
@@ -107,7 +113,7 @@ export function Header() {
                     <Button variant="ghost" size="sm" className="flex items-center space-x-2">
                       <User className="w-4 h-4" />
                       <span className="hidden sm:block font-paragraph text-sm">
-                        {(member?.contact?.firstName || member?.profile?.nickname || 'User')}
+                        {(member?.contact?.firstName || member?.profile?.nickname || t('nav.profile'))}
                       </span>
                     </Button>
                   </DropdownMenuTrigger>
@@ -117,7 +123,7 @@ export function Header() {
                       <p className="font-paragraph text-xs text-muted-foreground">{member?.loginEmail}</p>
                       {member?.role && (
                         <Badge variant="outline" className="mt-1 text-xs">
-                          {member.role === 'artisan' ? 'Artisan' : 'Art Lover'}
+                          {member.role === 'artisan' ? t('role.artisan') : t('role.buyer')}
                         </Badge>
                       )}
                     </div>
@@ -125,7 +131,7 @@ export function Header() {
                     <DropdownMenuItem asChild>
                       <Link to="/profile" className="flex items-center">
                         <Settings className="mr-2 h-4 w-4" />
-                        Profile
+                        {t('nav.profile')}
                       </Link>
                     </DropdownMenuItem>
                     {member?.role === 'artisan' && (
@@ -139,7 +145,7 @@ export function Header() {
                         <DropdownMenuItem asChild>
                           <Link to="/dashboard" className="flex items-center">
                             <Store className="mr-2 h-4 w-4" />
-                            Dashboard
+                            {t('nav.dashboard')}
                           </Link>
                         </DropdownMenuItem>
                       </>
@@ -147,7 +153,7 @@ export function Header() {
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleLogout} className="text-destructive">
                       <LogOut className="mr-2 h-4 w-4" />
-                      Sign Out
+                      {t('nav.logout')}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -156,13 +162,13 @@ export function Header() {
               <>
                 {/* Non-authenticated Actions */}
                 <Button asChild variant="ghost" className="font-heading">
-                  <Link to="/login">Sign In</Link>
+                  <Link to="/login">{t('nav.login')}</Link>
                 </Button>
                 <Button 
                   asChild 
                   className="bg-neonaccent text-primary hover:bg-neonaccent/90 font-heading font-bold"
                 >
-                  <Link to="/signup">Get Started</Link>
+                  <Link to="/signup">{t('nav.signup')}</Link>
                 </Button>
               </>
             )}
@@ -208,7 +214,7 @@ export function Header() {
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       <User className="mr-3 w-4 h-4" />
-                      Profile
+                      {t('nav.profile')}
                     </Link>
                     {member?.role === 'artisan' && (
                       <Link
@@ -228,7 +234,7 @@ export function Header() {
                       className="flex items-center w-full px-3 py-2 font-heading text-sm font-medium text-destructive hover:bg-destructive/10 rounded-md"
                     >
                       <LogOut className="mr-3 w-4 h-4" />
-                      Sign Out
+                      {t('nav.logout')}
                     </button>
                   </>
                 ) : (
@@ -238,14 +244,14 @@ export function Header() {
                       className="block px-3 py-2 font-heading text-sm font-medium text-primary/80 hover:text-neonaccent rounded-md"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
-                      Sign In
+                      {t('nav.login')}
                     </Link>
                     <Link
                       to="/signup"
                       className="block px-3 py-2 font-heading text-sm font-medium bg-neonaccent text-primary rounded-md hover:bg-neonaccent/90"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
-                      Get Started
+                      {t('nav.signup')}
                     </Link>
                   </>
                 )}
