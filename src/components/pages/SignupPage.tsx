@@ -143,7 +143,9 @@ export default function SignupPage() {
       }
 
       // Redirect based on role
-      nav(role === 'artisan' ? '/profile/setup' : '/buyer/dashboard', { replace: true });
+      const redirectPath = role === 'artisan' ? '/profile/setup' : '/buyer/dashboard';
+      console.log('Redirecting to:', redirectPath);
+      nav(redirectPath, { replace: true });
     } catch (e: any) {
       const errorMessage = mapError(e);
       setErrors({ submit: errorMessage });
@@ -181,7 +183,9 @@ export default function SignupPage() {
       );
 
       await Promise.race([actions.login(), timeout]);
-      nav(role === 'artisan' ? '/profile/setup' : '/buyer/dashboard', { replace: true });
+      const redirectPath = role === 'artisan' ? '/profile/setup' : '/buyer/dashboard';
+      console.log('Google signup redirecting to:', redirectPath);
+      nav(redirectPath, { replace: true });
     } catch (e: any) {
       const code: string = e?.code || '';
       if (code.includes('popup-') || e?.message === 'timeout') {

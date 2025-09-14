@@ -173,7 +173,7 @@ export default function HomePage() {
                       <Button
                         asChild
                         size="lg"
-                        className="bg-neonaccent text-primary hover:bg-neonaccent/90 font-heading font-bold text-lg px-8 py-4 rounded-full"
+                        className="btn-primary font-heading font-bold text-lg px-8 py-4 rounded-full hover-lift"
                       >
                         <Link to="/choose-role">
                           <UserPlus className="mr-2 w-5 h-5" />
@@ -184,7 +184,7 @@ export default function HomePage() {
                         asChild
                         size="lg"
                         variant="outline"
-                        className="border-white text-white hover:bg-white hover:text-primary font-heading font-bold text-lg px-8 py-4 rounded-full"
+                        className="border-white text-white hover:bg-white hover:text-primary font-heading font-bold text-lg px-8 py-4 rounded-full hover-lift glass"
                       >
                         <Link to="/sell">
                           <Store className="mr-2 w-5 h-5" />
@@ -196,7 +196,7 @@ export default function HomePage() {
                     <Button
                       asChild
                       size="lg"
-                      className="bg-neonaccent text-primary hover:bg-neonaccent/90 font-heading font-bold text-lg px-8 py-4 rounded-full"
+                      className="btn-secondary font-heading font-bold text-lg px-8 py-4 rounded-full hover-lift"
                     >
                       <Link to={member?.role === 'artisan' ? '/copilot' : '/discover'}>
                         {member?.role === 'artisan' ? 'Go to Seller Tools' : 'Explore Artworks'}
@@ -353,9 +353,9 @@ export default function HomePage() {
                 >
                   <Link
                     to={category.href}
-                    className="flex flex-col items-center group text-primary min-w-[5rem]"
+                    className="flex flex-col items-center group text-primary min-w-[5rem] hover-lift"
                   >
-                    <div className="w-20 h-20 bg-neonaccent rounded-full flex items-center justify-center mb-3 group-hover:scale-110 group-hover:shadow-lg transition-all duration-300 shadow-soft">
+                    <div className="w-20 h-20 bg-neonaccent rounded-full flex items-center justify-center mb-3 group-hover:scale-110 group-hover:shadow-lg transition-all duration-300 shadow-soft hover-glow">
                       <span className="text-3xl">{category.icon}</span>
                     </div>
                     <span className="text-sm group-hover:text-neonaccent transition-colors font-heading text-primary text-center leading-tight">
@@ -392,7 +392,7 @@ export default function HomePage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
               >
-                <Card className="group hover:shadow-large transition-all duration-300 border-0 hover:-translate-y-1">
+                <Card className="group hover:shadow-large transition-all duration-300 border-0 hover:-translate-y-1 card-enhanced card-glow">
                   <CardContent className="p-0">
                     <div className="relative overflow-hidden rounded-t-lg">
                       <Image
@@ -557,7 +557,7 @@ export default function HomePage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
             >
-              <Card className="h-full bg-gradient-to-br from-primary to-primary/80 text-primary-foreground border-0 hover:shadow-large transition-all duration-300 hover:-translate-y-1">
+              <Card className="h-full bg-gradient-to-br from-primary to-primary/80 text-primary-foreground border-0 hover:shadow-large transition-all duration-300 hover:-translate-y-1 card-glow">
                 <CardContent className="p-8 text-center">
                   <h3 className="font-heading text-xl font-bold mb-3 uppercase">
                     Explore Art by Themes
@@ -586,7 +586,7 @@ export default function HomePage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
             >
-              <Card className="h-full bg-gradient-to-br from-neonaccent to-neonaccent/80 text-primary border-0 hover:shadow-large transition-all duration-300 hover:-translate-y-1">
+              <Card className="h-full bg-gradient-to-br from-neonaccent to-neonaccent/80 text-primary border-0 hover:shadow-large transition-all duration-300 hover:-translate-y-1 card-glow">
                 <CardContent className="p-8 text-center">
                   <h3 className="font-heading text-xl font-bold mb-3 uppercase">
                     Explore Traditional Art
@@ -615,7 +615,7 @@ export default function HomePage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
             >
-              <Card className="h-full bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 hover:shadow-large transition-all duration-300 hover:-translate-y-1">
+              <Card className="h-full bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 hover:shadow-large transition-all duration-300 hover:-translate-y-1 card-enhanced card-glow">
                 <CardContent className="p-8 text-center">
                   <h3 className="font-heading text-xl font-bold mb-3 uppercase text-primary">
                     Discover Section
@@ -643,7 +643,7 @@ export default function HomePage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
             >
-              <Card className="h-full bg-gradient-to-br from-primary/5 to-neonaccent/10 border border-neonaccent/30 hover:shadow-large transition-all duration-300 hover:-translate-y-1">
+              <Card className="h-full bg-gradient-to-br from-primary/5 to-neonaccent/10 border border-neonaccent/30 hover:shadow-large transition-all duration-300 hover:-translate-y-1 card-enhanced card-glow">
                 <CardContent className="p-8 text-center">
                   <h3 className="font-heading text-xl font-bold mb-3 uppercase text-primary">
                     Join Our Community

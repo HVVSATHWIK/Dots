@@ -51,7 +51,7 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
+    <header className="sticky top-0 z-50 glass border-b border-border/50 shadow-soft">
       <div className="max-w-[120rem] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
@@ -166,7 +166,7 @@ export function Header() {
                 </Button>
                 <Button 
                   asChild 
-                  className="bg-neonaccent text-primary hover:bg-neonaccent/90 font-heading font-bold"
+                  className="btn-secondary font-heading font-bold hover-lift"
                 >
                   <Link to="/signup">{t('nav.signup')}</Link>
                 </Button>
@@ -248,7 +248,7 @@ export function Header() {
                     </Link>
                     <Link
                       to="/signup"
-                      className="block px-3 py-2 font-heading text-sm font-medium bg-neonaccent text-primary rounded-md hover:bg-neonaccent/90"
+                      className="block px-3 py-2 font-heading text-sm font-medium btn-secondary rounded-md hover-lift"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       {t('nav.signup')}

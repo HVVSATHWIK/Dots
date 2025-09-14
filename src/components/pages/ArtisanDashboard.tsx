@@ -10,6 +10,7 @@ import { getDb } from '@/integrations/members/firebase';
 import { doc, getDoc, collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import ArtisanTutorial from '@/components/ui/ArtisanTutorial';
 
 export default function ArtisanDashboard() {
   const { user } = useMember();
@@ -18,6 +19,7 @@ export default function ArtisanDashboard() {
   const [analytics, setAnalytics] = useState<any>(null);
   const [products, setProducts] = useState<any[]>([]);
   const [profileComplete, setProfileComplete] = useState<boolean | null>(null);
+  const [showTutorial, setShowTutorial] = useState(false);
 
   useEffect(() => {
     const loadArtisanData = async () => {
@@ -78,6 +80,21 @@ export default function ArtisanDashboard() {
 
     loadArtisanData();
   }, [user]);
+
+  useEffect(() => {
+    // Check if tutorial has been completed
+    const tutorialCompleted = localStorage.getItem(`tutorial_completed_artisan_${user?.uid}`);
+    if (!tutorialCompleted && user && profileComplete !== false) {
+      setShowTutorial(true);
+    }
+  }, [user, profileComplete]);
+
+  const handleTutorialComplete = () => {
+    if (user) {
+      localStorage.setItem(`tutorial_completed_artisan_${user.uid}`, 'true');
+    }
+    setShowTutorial(false);
+  };
 
   const artisanStats = [
     {
@@ -464,6 +481,13 @@ export default function ArtisanDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Tutorial Modal */}
+      <ArtisanTutorial
+        isOpen={showTutorial}
+        onClose={() => setShowTutorial(false)}
+        onComplete={handleTutorialComplete}
+      />
     </div>
   );
 }

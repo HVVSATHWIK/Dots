@@ -10,6 +10,7 @@ import { getDb } from '@/integrations/members/firebase';
 import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import BuyerTutorial from '@/components/ui/BuyerTutorial';
 
 export default function BuyerDashboard() {
   const { user } = useMember();
@@ -17,6 +18,7 @@ export default function BuyerDashboard() {
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [stats, setStats] = useState<any>(null);
+  const [showTutorial, setShowTutorial] = useState(false);
 
   useEffect(() => {
     const loadBuyerData = async () => {
@@ -85,6 +87,21 @@ export default function BuyerDashboard() {
 
     loadBuyerData();
   }, [user]);
+
+  useEffect(() => {
+    // Check if tutorial has been completed
+    const tutorialCompleted = localStorage.getItem(`tutorial_completed_buyer_${user?.uid}`);
+    if (!tutorialCompleted && user) {
+      setShowTutorial(true);
+    }
+  }, [user]);
+
+  const handleTutorialComplete = () => {
+    if (user) {
+      localStorage.setItem(`tutorial_completed_buyer_${user.uid}`, 'true');
+    }
+    setShowTutorial(false);
+  };
 
   const buyerStats = [
     {
@@ -381,6 +398,13 @@ export default function BuyerDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Tutorial Modal */}
+      <BuyerTutorial
+        isOpen={showTutorial}
+        onClose={() => setShowTutorial(false)}
+        onComplete={handleTutorialComplete}
+      />
     </div>
   );
 }
