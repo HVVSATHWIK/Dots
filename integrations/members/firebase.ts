@@ -51,6 +51,11 @@ if (import.meta.env.DEV) {
     hasAppId: !!config.appId,
     source: (g.__FIREBASE_CONFIG__ && !import.meta.env.PUBLIC_FB_API_KEY && !import.meta.env.VITE_FB_API_KEY) ? 'global-fallback' : 'env',
   });
+} else {
+  // Lightweight production diagnostic (no secrets) – logs only if incomplete
+  if (!isConfigComplete(config)) {
+    console.warn('[Firebase] Production config incomplete: apiKey?', !!config.apiKey, 'projectId?', !!config.projectId, 'appId?', !!config.appId);
+  }
 }
 
 export function getFirebaseApp() {
