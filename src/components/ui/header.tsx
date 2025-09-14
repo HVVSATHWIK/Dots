@@ -12,7 +12,6 @@ import {
   LogOut,
   Settings,
   Palette,
-  MessageSquare,
   Store
 } from 'lucide-react';
 import {
@@ -108,7 +107,7 @@ export function Header() {
                     <Button variant="ghost" size="sm" className="flex items-center space-x-2">
                       <User className="w-4 h-4" />
                       <span className="hidden sm:block font-paragraph text-sm">
-                        {member?.firstName || 'User'}
+                        {(member?.contact?.firstName || member?.profile?.nickname || 'User')}
                       </span>
                     </Button>
                   </DropdownMenuTrigger>

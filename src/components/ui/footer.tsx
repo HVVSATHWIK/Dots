@@ -1,15 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Logo } from '@/components/ui/logo';
-import { 
-  Facebook, 
-  Twitter, 
-  Instagram, 
-  Youtube, 
-  Mail, 
-  MapPin, 
-  Phone,
-  Heart 
-} from 'lucide-react';
+import { Mail, MapPin, Phone, Heart } from 'lucide-react';
+import { FacebookIcon, TwitterXIcon, InstagramIcon, YoutubeIcon } from '@/components/ui/brand-icons';
 import { Button } from '@/components/ui/button';
 
 export function Footer() {
@@ -35,10 +27,10 @@ export function Footer() {
   };
 
   const socialLinks = [
-    { name: 'Facebook', icon: Facebook, href: '#' },
-    { name: 'Twitter', icon: Twitter, href: '#' },
-    { name: 'Instagram', icon: Instagram, href: '#' },
-    { name: 'Youtube', icon: Youtube, href: '#' },
+    { name: 'Facebook', icon: FacebookIcon, href: '#' },
+    { name: 'X / Twitter', icon: TwitterXIcon, href: '#' },
+    { name: 'Instagram', icon: InstagramIcon, href: '#' },
+    { name: 'YouTube', icon: YoutubeIcon, href: '#' },
   ];
 
   return (

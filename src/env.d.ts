@@ -23,6 +23,9 @@ declare global {
     readonly VITE_BASE_NAME?: string;
     readonly VITE_API_AI_BASE_URL?: string;
     readonly VITE_API_TRUST_BASE_URL?: string;
+    // Gemini / Google Generative AI (server-side only; do NOT expose publicly)
+    readonly GEMINI_API_KEY?: string;
+    readonly GEMINI_MODEL?: string;
   // server-only env are not typed here intentionally; but you may define process.env types via vite-env.d.ts if needed
   }
   interface ImportMeta {

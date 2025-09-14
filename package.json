@@ -16,7 +16,7 @@
     "@astrojs/check": "^0.9.4",
     "@astrojs/react": "^4.2.3",
     "@astrojs/tailwind": "^6.0.2",
-    "@astrojs/vercel": "^8.1.0",
+    "@astrojs/vercel": "^8.0.4",
     "@google/generative-ai": "^0.24.1",
     "@hello-pangea/dnd": "^18.0.1",
     "@hookform/resolvers": "^5.0.1",

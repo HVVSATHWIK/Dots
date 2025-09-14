@@ -23,16 +23,22 @@ export default defineConfig({
           if (command === "dev") {
             injectScript(
               "page",
-              `try {
-                import("@wix/framewire").then(({ init }) => {
-                  console.log("Framewire initialized");
-                  init();
-                }).catch((err) => {
-                  console.warn("Framewire initialization failed:", err);
-                });
-              } catch (err) {
-                console.warn("Framewire import failed:", err);
-              }`,
+              `(() => {
+                if (window.__FRAMEWIRE_READY__) { return; }
+                window.__FRAMEWIRE_READY__ = true;
+                try {
+                  import("@wix/framewire").then(({ init }) => {
+                    if (typeof init === 'function') {
+                      console.log("Framewire initialized");
+                      init();
+                    }
+                  }).catch((err) => {
+                    console.warn("Framewire initialization failed:", err);
+                  });
+                } catch (err) {
+                  console.warn("Framewire import failed:", err);
+                }
+              })();`,
             );
           }
         },

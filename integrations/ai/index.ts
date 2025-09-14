@@ -112,6 +112,28 @@ export async function chat(messages: ChatMessage[], model?: string): Promise<str
   return String(json.reply ?? '');
 }
 
+// Generic text generation via the /api/ai/generate endpoint.
+// Accepts a single prompt (caller can concatenate prior context) and optional model/system.
+export async function generate(prompt: string, opts?: { model?: string; system?: string }): Promise<string> {
+  const url = `${api}/generate`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ prompt, model: opts?.model, system: opts?.system }),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`AI generate error (${res.status}): ${text.slice(0, 240)}`);
+  }
+  const ct = res.headers.get('content-type') || '';
+  if (!ct.includes('application/json')) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`AI generate non-JSON response: ${text.slice(0, 240)}`);
+  }
+  const json = await res.json();
+  return String(json.reply ?? json.text ?? '');
+}
+
 export async function generateImage(input: GenerateImageInput): Promise<GenerateImageResult> {
   const url = `${api}/image`;
   const res = await fetch(url, {

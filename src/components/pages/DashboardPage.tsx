@@ -99,7 +99,7 @@ export default function DashboardPage() {
           transition={{ delay: 0.1 }}
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
         >
-          {stats.map((stat, index) => {
+          {stats.map((stat) => {
             const IconComponent = stat.icon;
             return (
               <Card key={stat.label} className="border-0">

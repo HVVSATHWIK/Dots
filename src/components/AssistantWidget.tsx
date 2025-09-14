@@ -2,7 +2,7 @@ import * as React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { MessageCircle, X, Minus, Send } from 'lucide-react';
-import { chat as chatApi } from '@/integrations/ai';
+import { generate as generateApi } from '@/integrations/ai';
 
 type ChatRole = 'user' | 'assistant' | 'system';
 interface ChatMessage { id: string; role: ChatRole; content: string; ts: number }
@@ -64,11 +64,15 @@ export default function AssistantWidget() {
     setInput('');
 
     try {
-      // The API injects the DOTS-wide system prompt; no need to send our own
-      const replyText = await chatApi([
-        ...messages.map(m => ({ role: m.role, content: m.content })),
-        { role: 'user', content: text },
-      ]);
+      // Build a condensed prompt from prior turns (simple linear transcript)
+      const history = messages
+        .slice(-8) // cap context to last 8 messages for token efficiency
+        .map(m => `${m.role === 'assistant' ? 'Assistant' : m.role === 'user' ? 'User' : 'System'}: ${m.content}`)
+        .join('\n');
+      const prompt = history
+        ? `${history}\nUser: ${text}\nAssistant:`
+        : `User: ${text}\nAssistant:`;
+      const replyText = await generateApi(prompt);
       const botMsg: ChatMessage = { id: makeId(), role: 'assistant', content: replyText, ts: Date.now() };
       setMessages(prev => [...prev, botMsg]);
       if (!isOpen) setUnread(u => u + 1);
