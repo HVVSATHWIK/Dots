@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { Header } from '@/components/ui/header';
 import { Footer } from '@/components/ui/footer';
+import AssistantWidget from '@/components/AssistantWidget';
 
 interface LayoutProps {
   children: ReactNode;
@@ -14,6 +15,7 @@ export default function Layout({ children }: LayoutProps) {
         {children}
       </main>
       <Footer />
+      <AssistantWidget />
     </div>
   );
 }

@@ -17,6 +17,12 @@ let config: FirebaseOptions = {
   measurementId: import.meta.env.PUBLIC_FB_MEASUREMENT_ID ?? import.meta.env.VITE_FB_MEASUREMENT_ID,
 };
 
+
+
+
+
+
+
 // Development fallback: allow injecting a global (e.g. via a script tag before bundle)
 // window.__FIREBASE_CONFIG__ = { apiKey: '...', projectId: '...', appId: '...' }
 const g: any = (typeof globalThis !== 'undefined') ? (globalThis as any) : {};

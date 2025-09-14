@@ -11,6 +11,7 @@ build/
 dist/
 .astro/
 .vercel/
+src/config/firebase-public.local.ts
 
 # Environment variables
 .env
