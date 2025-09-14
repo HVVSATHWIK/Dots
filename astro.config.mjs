@@ -9,7 +9,7 @@ import sourceAttrsPlugin from "@wix/babel-plugin-jsx-source-attrs";
 import dynamicDataPlugin from "@wix/babel-plugin-jsx-dynamic-data";
 import customErrorOverlayPlugin from "./vite-error-overlay-plugin.js";
 
-const isBuild = process.env.NODE_ENV == "production";
+const isBuild = process.env.NODE_ENV == "production"; // still used for wix embed flags
 const enableWix = !!process.env.WIX_CLIENT_ID; // Only enable Wix integration if env is provided
 
 // https://astro.build/config
@@ -61,8 +61,8 @@ export default defineConfig({
   customErrorOverlayPlugin(),
     ],
   },
-  // Use Vercel adapter (serverless functions) for production builds
-  adapter: isBuild ? vercel() : undefined,
+  // Always apply Vercel adapter so local build replicates deployment layout
+  adapter: vercel(),
   devToolbar: {
     enabled: false,
   },

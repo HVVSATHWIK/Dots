@@ -1,4 +1,7 @@
 ---
+// NOTE: Earlier 500 on Vercel was caused by dynamic imports BEFORE static imports,
+// which broke Astro's ability to detect the `client:only` component import, causing
+// build failure (missing dist/server/entry.mjs). Keep static imports first.
 import { Head } from "@/components/Head";
 import AppRouter from "@/components/Router";
 import "@/styles/global.css";
