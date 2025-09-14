@@ -90,10 +90,14 @@ export function MemberProvider({ children }: { children: React.ReactNode }) {
             // If role selection not made (still default buyer and no explicit session flag) allow optional redirect to chooser
             try {
               const hasChosen = sessionStorage.getItem('dots_role_chosen') === '1';
-              if (!hasChosen && !sessionStorage.getItem('dots_skip_role_prompt')) {
-                // Avoid infinite loops: only redirect if not already on chooser
-                if (window.location.pathname !== '/choose-role') {
+              const db = getDb();
+              const userDoc = await getDoc(doc(db, 'users', u.uid));
+              const existingRole = (userDoc.exists() ? (userDoc.data() as any)?.role : null);
+              if (!hasChosen && !existingRole && !sessionStorage.getItem('dots_skip_role_prompt')) {
+                // Avoid infinite loops: only redirect if not already on chooser, login, or signup
+                if (!['/choose-role', '/login', '/signup'].includes(window.location.pathname)) {
                   window.history.replaceState({}, '', '/choose-role');
+                  return; // Don't continue with normal auth flow
                 }
               }
             } catch { /* ignore */ }

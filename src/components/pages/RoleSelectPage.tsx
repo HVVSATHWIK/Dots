@@ -3,6 +3,8 @@ import { useMember } from '@/integrations';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { ArrowRight } from 'lucide-react';
 
 export default function RoleSelectPage() {
   const navigate = useNavigate();
@@ -20,6 +22,7 @@ export default function RoleSelectPage() {
   function choose(role: 'buyer' | 'artisan') {
     // Store the desired role in session; the auth context will merge it upon login or next refresh.
     sessionStorage.setItem('dots_role', role);
+    sessionStorage.setItem('dots_role_chosen', '1'); // Mark that user explicitly chose a role
     // If authenticated already, force a soft reload to trigger merge in provider logic.
     if (isAuthenticated) {
       // Redirect logic: if artisan -> profile setup; if buyer -> dashboard
@@ -34,28 +37,128 @@ export default function RoleSelectPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12">
-      <div className="max-w-3xl w-full space-y-10">
-        <div className="text-center space-y-3">
-          <h1 className="font-heading text-3xl font-bold text-primary">Choose How You Want to Continue</h1>
-          <p className="font-paragraph text-primary/70 max-w-xl mx-auto">Select a path below. You can explore as a Buyer or build your creative presence as an Artisan. (You can switch later.)</p>
+    <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-gradient-to-br from-background via-secondary/20 to-background">
+      <div className="max-w-4xl w-full space-y-10">
+        <div className="text-center space-y-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <h1 className="font-heading text-4xl font-bold text-primary mb-4">Welcome to DOTS</h1>
+            <p className="font-paragraph text-lg text-primary/70 max-w-2xl mx-auto leading-relaxed">
+              Choose how you'd like to experience our platform. Whether you're here to discover beautiful handcrafted art or share your own creations with the world, we've got the perfect experience for you.
+            </p>
+          </motion.div>
         </div>
-        <div className="grid md:grid-cols-2 gap-6">
-          <Card className="border-2 hover:border-neonaccent transition-colors">
-            <CardContent className="p-6 flex flex-col h-full">
-              <h2 className="font-heading text-xl font-bold mb-2">Buyer</h2>
-              <p className="font-paragraph text-sm text-primary/70 flex-1">Discover handcrafted works, curate wishlists, and use AI Assistant for discovery tips.</p>
-              <Button onClick={() => choose('buyer')} className="mt-6 bg-neonaccent text-primary hover:bg-neonaccent/90 font-heading font-bold">Continue as Buyer</Button>
-            </CardContent>
-          </Card>
-          <Card className="border-2 hover:border-neonaccent transition-colors">
-            <CardContent className="p-6 flex flex-col h-full">
-              <h2 className="font-heading text-xl font-bold mb-2">Artisan (Seller)</h2>
-              <p className="font-paragraph text-sm text-primary/70 flex-1">Access AI Copilot tools, set up your artisan profile, and prepare product listings.</p>
-              <Button onClick={() => choose('artisan')} className="mt-6 bg-neonaccent text-primary hover:bg-neonaccent/90 font-heading font-bold">Become an Artisan</Button>
-            </CardContent>
-          </Card>
+
+        <div className="grid md:grid-cols-2 gap-8">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <Card className="border-2 hover:border-neonaccent transition-all duration-300 hover:shadow-xl h-full">
+              <CardContent className="p-8 flex flex-col h-full">
+                <div className="text-center mb-6">
+                  <div className="w-20 h-20 bg-neonaccent rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span className="text-4xl">🛍️</span>
+                  </div>
+                  <h2 className="font-heading text-2xl font-bold mb-2">I'm Here to Buy Art</h2>
+                  <p className="font-paragraph text-primary/70 leading-relaxed">
+                    Discover thousands of authentic handcrafted pieces from skilled Indian artisans. Browse by category, explore themes, and find the perfect piece for your collection.
+                  </p>
+                </div>
+
+                <div className="space-y-3 mb-6">
+                  <div className="flex items-center text-sm text-primary/80">
+                    <span className="text-neonaccent mr-2">✓</span>
+                    Browse authentic Indian crafts
+                  </div>
+                  <div className="flex items-center text-sm text-primary/80">
+                    <span className="text-neonaccent mr-2">✓</span>
+                    AI-powered discovery recommendations
+                  </div>
+                  <div className="flex items-center text-sm text-primary/80">
+                    <span className="text-neonaccent mr-2">✓</span>
+                    Secure worldwide shipping
+                  </div>
+                  <div className="flex items-center text-sm text-primary/80">
+                    <span className="text-neonaccent mr-2">✓</span>
+                    Direct support for artisans
+                  </div>
+                </div>
+
+                <Button
+                  onClick={() => choose('buyer')}
+                  className="mt-auto bg-neonaccent text-primary hover:bg-neonaccent/90 font-heading font-bold text-lg py-3"
+                  size="lg"
+                >
+                  Continue as Buyer
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <Card className="border-2 hover:border-neonaccent transition-all duration-300 hover:shadow-xl h-full">
+              <CardContent className="p-8 flex flex-col h-full">
+                <div className="text-center mb-6">
+                  <div className="w-20 h-20 bg-neonaccent rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span className="text-4xl">🎨</span>
+                  </div>
+                  <h2 className="font-heading text-2xl font-bold mb-2">I'm an Artisan</h2>
+                  <p className="font-paragraph text-primary/70 leading-relaxed">
+                    Join our marketplace and share your handcrafted creations with art lovers worldwide. Access AI tools, analytics, and grow your creative business.
+                  </p>
+                </div>
+
+                <div className="space-y-3 mb-6">
+                  <div className="flex items-center text-sm text-primary/80">
+                    <span className="text-neonaccent mr-2">✓</span>
+                    AI Copilot for product descriptions
+                  </div>
+                  <div className="flex items-center text-sm text-primary/80">
+                    <span className="text-neonaccent mr-2">✓</span>
+                    Sales analytics and insights
+                  </div>
+                  <div className="flex items-center text-sm text-primary/80">
+                    <span className="text-neonaccent mr-2">✓</span>
+                    AI-powered pricing optimization
+                  </div>
+                  <div className="flex items-center text-sm text-primary/80">
+                    <span className="text-neonaccent mr-2">✓</span>
+                    Global marketplace exposure
+                  </div>
+                </div>
+
+                <Button
+                  onClick={() => choose('artisan')}
+                  className="mt-auto bg-neonaccent text-primary hover:bg-neonaccent/90 font-heading font-bold text-lg py-3"
+                  size="lg"
+                >
+                  Become an Artisan
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
         </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+          className="text-center"
+        >
+          <p className="font-paragraph text-sm text-primary/60">
+            Not sure yet? You can always change your role later in your profile settings.
+          </p>
+        </motion.div>
       </div>
     </div>
   );

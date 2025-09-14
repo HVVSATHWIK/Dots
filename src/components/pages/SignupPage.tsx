@@ -158,16 +158,28 @@ export default function SignupPage() {
   };
 
   const onGoogleSignup = async () => {
+    // Ensure role is selected before proceeding
+    if (!role) {
+      setErrors({ submit: 'Please select whether you want to buy or sell art before continuing.' });
+      toast({
+        title: "Role Required",
+        description: "Please choose if you want to buy art or become an artisan.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     sessionStorage.setItem('dots_role', role);
+    sessionStorage.setItem('dots_role_chosen', '1'); // Mark that user explicitly chose a role
     sessionStorage.setItem('dots_next', role === 'artisan' ? '/profile/setup' : '/dashboard');
     setLoading(true);
     setErrors({});
 
     try {
-      const timeout = new Promise((_r, rej) => 
+      const timeout = new Promise((_r, rej) =>
         setTimeout(() => rej(new Error('timeout')), 15000)
       );
-      
+
       await Promise.race([actions.login(), timeout]);
       nav(role === 'artisan' ? '/profile/setup' : '/dashboard', { replace: true });
     } catch (e: any) {
@@ -179,7 +191,7 @@ export default function SignupPage() {
         });
         return;
       }
-      
+
       const errorMessage = 'Google sign-in failed. Please try again or use email signup.';
       setErrors({ submit: errorMessage });
       toast({
@@ -247,8 +259,8 @@ export default function SignupPage() {
                     onClick={() => setRole('buyer')}
                     className={cn(
                       "p-4 rounded-lg border-2 transition-all text-left",
-                      role === 'buyer' 
-                        ? "border-neonaccent bg-neonaccent/10" 
+                      role === 'buyer'
+                        ? "border-neonaccent bg-neonaccent/10"
                         : "border-gray-200 hover:border-gray-300"
                     )}
                   >
@@ -262,8 +274,8 @@ export default function SignupPage() {
                     onClick={() => setRole('artisan')}
                     className={cn(
                       "p-4 rounded-lg border-2 transition-all text-left",
-                      role === 'artisan' 
-                        ? "border-neonaccent bg-neonaccent/10" 
+                      role === 'artisan'
+                        ? "border-neonaccent bg-neonaccent/10"
                         : "border-gray-200 hover:border-gray-300"
                     )}
                   >
@@ -273,6 +285,12 @@ export default function SignupPage() {
                     </div>
                   </button>
                 </div>
+                {!role && (
+                  <p className="text-sm text-amber-600 flex items-center gap-1">
+                    <span className="text-amber-500">⚠️</span>
+                    Please select your role to continue
+                  </p>
+                )}
               </div>
 
               {/* Email */}
@@ -444,9 +462,12 @@ export default function SignupPage() {
               <Button
                 type="button"
                 variant="outline"
-                disabled={loading}
+                disabled={loading || !role}
                 onClick={onGoogleSignup}
-                className="w-full h-12 border-gray-300 hover:bg-gray-50 font-heading font-medium text-base"
+                className={cn(
+                  "w-full h-12 border-gray-300 hover:bg-gray-50 font-heading font-medium text-base",
+                  !role && "opacity-50 cursor-not-allowed"
+                )}
               >
                 {loading ? (
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />
@@ -459,6 +480,7 @@ export default function SignupPage() {
                   </svg>
                 )}
                 Continue with Google
+                {!role && <span className="ml-2 text-xs text-gray-500">(Select role first)</span>}
               </Button>
             </form>
 

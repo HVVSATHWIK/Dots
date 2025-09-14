@@ -305,7 +305,7 @@ export default function HomePage() {
                   size="lg"
                   className="bg-neonaccent text-primary hover:bg-neonaccent/90 font-heading font-bold"
                 >
-                  <Link to="/signup">
+                  <Link to="/choose-role">
                     <UserPlus className="mr-2 w-5 h-5" />
                     Start Shopping
                   </Link>
@@ -462,10 +462,14 @@ export default function HomePage() {
                           size="sm"
                           className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 font-heading font-medium"
                           disabled={!isAuthenticated}
-                          onClick={() => !isAuthenticated && alert('Please sign up to add items to cart')}
+                          onClick={() => {
+                            if (!isAuthenticated) {
+                              window.location.href = '/choose-role';
+                            }
+                          }}
                         >
                           <ShoppingCart className="w-4 h-4 mr-2" />
-                          {isAuthenticated ? 'Add to Cart' : 'Sign Up to Buy'}
+                          {isAuthenticated ? 'Add to Cart' : 'Choose Your Role'}
                         </Button>
                         <Button
                           asChild
@@ -473,8 +477,8 @@ export default function HomePage() {
                           variant="outline"
                           className="border-primary text-primary hover:bg-primary hover:text-primary-foreground font-heading font-medium"
                         >
-                          <Link to={isAuthenticated ? `/product/${product.id}` : '/signup'}>
-                            {isAuthenticated ? 'View' : 'Sign Up'}
+                          <Link to={isAuthenticated ? `/product/${product.id}` : '/choose-role'}>
+                            {isAuthenticated ? 'View' : 'Choose Your Role'}
                           </Link>
                         </Button>
                       </div>
