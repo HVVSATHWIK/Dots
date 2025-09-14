@@ -49,6 +49,17 @@ export function MemberProvider({ children }: { children: React.ReactNode }) {
               const existingRole = (snap.exists() ? (snap.data() as any)?.role : null) as any;
               const sessionRole = (sessionStorage.getItem('dots_role') as any) || null;
               resolvedRole = (existingRole || sessionRole || 'buyer') as any;
+              // If no user doc existed, create a minimal one now.
+              if (!snap.exists()) {
+                await setDoc(ref, {
+                  email: u.email || '',
+                  name: u.displayName || '',
+                  role: resolvedRole,
+                  joinedOn: serverTimestamp(),
+                  profileComplete: false,
+                  metadata: { provider: 'google', lastLogin: serverTimestamp() }
+                }, { merge: true });
+              }
               setRole(resolvedRole);
             } catch {
               const sessionRole = (sessionStorage.getItem('dots_role') as any) || null;
@@ -76,6 +87,16 @@ export function MemberProvider({ children }: { children: React.ReactNode }) {
                 try { window.location.replace(next); } catch { /* noop */ }
               }
             }
+            // If role selection not made (still default buyer and no explicit session flag) allow optional redirect to chooser
+            try {
+              const hasChosen = sessionStorage.getItem('dots_role_chosen') === '1';
+              if (!hasChosen && !sessionStorage.getItem('dots_skip_role_prompt')) {
+                // Avoid infinite loops: only redirect if not already on chooser
+                if (window.location.pathname !== '/choose-role') {
+                  window.history.replaceState({}, '', '/choose-role');
+                }
+              }
+            } catch { /* ignore */ }
           }
         } catch (e) {
           console.warn('[auth] Post-login merge failed:', e);

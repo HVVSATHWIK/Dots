@@ -11,6 +11,7 @@ import { Image } from '@/components/ui/image';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useMember } from '@/integrations';
+import { useWishlist } from '@/hooks/use-wishlist';
 import { motion } from 'framer-motion';
 
 export default function ProfilePage() {
@@ -85,35 +86,9 @@ export default function ProfilePage() {
     }
   ];
 
-  // Sample wishlist
-  const wishlist = [
-    {
-      id: 1,
-      name: 'Warli Art Canvas',
-      artist: 'Deepak Tribal',
-      price: 2200,
-      originalPrice: 2800,
-      image: 'https://static.wixstatic.com/media/d7d9fb_c4f7592c8deb4549bf6418c8b27ca31d~mv2.png?originWidth=256&originHeight=192',
-      inStock: true
-    },
-    {
-      id: 2,
-      name: 'Silver Jewelry Set',
-      artist: 'Kavita Singh',
-      price: 5500,
-      originalPrice: 6500,
-      image: 'https://static.wixstatic.com/media/d7d9fb_c85b094ce787472dbf494bf395bba5fc~mv2.png?originWidth=256&originHeight=192',
-      inStock: true
-    },
-    {
-      id: 3,
-      name: 'Wooden Elephant Figurine',
-      artist: 'Suresh Reddy',
-      price: 1500,
-      originalPrice: 1800,
-      image: 'https://static.wixstatic.com/media/d7d9fb_d4adc63553bc4e7da26ae94e177fe87e~mv2.png?originWidth=256&originHeight=192',
-      inStock: false
-    }
+  const { items: wishlistItems, loading: wishlistLoading, error: wishlistError } = useWishlist();
+  const fallbackWishlist = [
+    { id: 'sample1', name: 'Sample Handicraft Item', artist: 'Demo Artist', price: 1000, originalPrice: 1200, image: 'https://static.wixstatic.com/media/d7d9fb_c4f7592c8deb4549bf6418c8b27ca31d~mv2.png?originWidth=256&originHeight=192', inStock: true }
   ];
 
   const handleInputChange = (field: string, value: string) => {
@@ -142,7 +117,7 @@ export default function ProfilePage() {
 
   const totalOrders = orders.length;
   const totalSpent = orders.reduce((sum, order) => sum + order.total, 0);
-  const wishlistCount = wishlist.length;
+  const wishlistCount = wishlistItems.length;
 
   return (
     <div className="min-h-screen bg-background">
@@ -474,17 +449,22 @@ export default function ProfilePage() {
                   <Card className="border-0">
                     <CardHeader>
                       <CardTitle className="font-heading text-xl font-bold text-primary">
-                        My Wishlist ({wishlist.length} items)
+                        My Wishlist ({wishlistItems.length} items)
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
+                      {wishlistLoading && <p className="text-sm text-primary/60">Loading wishlist…</p>}
+                      {wishlistError && <p className="text-sm text-red-600">{wishlistError}</p>}
+                      {!wishlistLoading && wishlistItems.length === 0 && !wishlistError && (
+                        <p className="text-sm text-primary/60 mb-4">Your wishlist is empty. Here is a sample item.</p>
+                      )}
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {wishlist.map((item, index) => (
+                        {(wishlistItems.length > 0 ? wishlistItems : fallbackWishlist).map((item: any, index: number) => (
                           <motion.div
                             key={item.id}
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: index * 0.1 }}
+                            transition={{ delay: index * 0.05 }}
                           >
                             <Card className="border-0 hover:shadow-lg transition-shadow duration-300">
                               <CardContent className="p-0">
@@ -500,40 +480,39 @@ export default function ProfilePage() {
                                   <button className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors">
                                     <Heart className="w-4 h-4 fill-current" />
                                   </button>
-                                  {!item.inStock && (
+                                  {item.inStock === false && (
                                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                                       <Badge variant="destructive">Out of Stock</Badge>
                                     </div>
                                   )}
                                 </div>
-
                                 <div className="p-4">
                                   <Link to={`/product/${item.id}`}>
                                     <h3 className="font-heading font-bold text-lg text-primary mb-1 hover:text-black transition-colors">
                                       {item.name}
                                     </h3>
                                   </Link>
-                                  <p className="font-paragraph text-sm text-primary/60 mb-2">
-                                    by {item.artist}
-                                  </p>
-
+                                  {item.artist && (
+                                    <p className="font-paragraph text-sm text-primary/60 mb-2">
+                                      by {item.artist}
+                                    </p>
+                                  )}
                                   <div className="flex items-center justify-between mb-3">
                                     <div className="flex items-center space-x-2">
-                                      <span className="font-heading font-bold text-lg text-primary">
-                                        ₹{item.price.toLocaleString()}
-                                      </span>
-                                      <span className="font-paragraph text-sm text-primary/50 line-through">
-                                        ₹{item.originalPrice.toLocaleString()}
-                                      </span>
+                                      {item.price != null && (
+                                        <span className="font-heading font-bold text-lg text-primary">₹{Number(item.price).toLocaleString()}</span>
+                                      )}
+                                      {item.originalPrice != null && (
+                                        <span className="font-paragraph text-sm text-primary/50 line-through">₹{Number(item.originalPrice).toLocaleString()}</span>
+                                      )}
                                     </div>
                                   </div>
-
                                   <Button
                                     size="sm"
                                     className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-                                    disabled={!item.inStock}
+                                    disabled={item.inStock === false}
                                   >
-                                    {item.inStock ? 'Add to Cart' : 'Out of Stock'}
+                                    {item.inStock === false ? 'Out of Stock' : 'Add to Cart'}
                                   </Button>
                                 </div>
                               </CardContent>
@@ -554,6 +533,13 @@ export default function ProfilePage() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-6">
+                      <div className="space-y-4">
+                        <h3 className="font-heading font-bold text-lg text-primary">Role & Access</h3>
+                        <p className="font-paragraph text-sm text-primary/60">Current role helps personalize your experience. You can change it anytime.</p>
+                        <Link to="/choose-role" className="inline-block">
+                          <Button variant="outline" size="sm">Change Role</Button>
+                        </Link>
+                      </div>
                       <div className="space-y-4">
                         <h3 className="font-heading font-bold text-lg text-primary">Notifications</h3>
                         <div className="space-y-3">

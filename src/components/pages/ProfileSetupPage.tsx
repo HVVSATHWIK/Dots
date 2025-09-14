@@ -7,13 +7,15 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useMember } from '@/integrations';
+import { getDb } from '@/integrations/members/firebase';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Camera, MapPin, User, Save, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function ProfileSetupPage() {
   const navigate = useNavigate();
-  const { member } = useMember();
+  const { member, user } = useMember();
   const { toast } = useToast();
   
   const [formData, setFormData] = useState({
@@ -121,16 +123,37 @@ export default function ProfileSetupPage() {
     setIsSubmitting(true);
 
     try {
-      // Simulate API call to save profile
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      console.log('Profile setup data:', formData);
-      
+      if (!member || !user?.uid) {
+        throw new Error('Not authenticated');
+      }
+      const db = getDb();
+      const finalRef = doc(db, 'users', user.uid);
+      await setDoc(finalRef, {
+        role: 'artisan',
+        profileComplete: true,
+        profile: {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          phone: formData.phone,
+          bio: formData.bio,
+          specialization: formData.specialization,
+          experience: formData.experience,
+          location: {
+            city: formData.city,
+            state: formData.state,
+            pincode: formData.pincode || null,
+          },
+          social: formData.socialMedia,
+          portfolio: formData.portfolio || null,
+        },
+        updatedAt: serverTimestamp(),
+      }, { merge: true });
+      sessionStorage.setItem('dots_role', 'artisan');
+      sessionStorage.setItem('dots_role_chosen', '1');
       toast({
-        title: "Profile setup complete!",
-        description: "Welcome to the DOTS artisan community.",
+        title: 'Profile setup complete!',
+        description: 'Welcome to the DOTS artisan community.',
       });
-      
       navigate('/copilot');
     } catch (error) {
       toast({

@@ -21,6 +21,7 @@ import LoginPage from '@/components/pages/LoginPage';
 import SignupPage from '@/components/pages/SignupPage';
 import DashboardPage from '@/components/pages/DashboardPage';
 import ProfileSetupPage from '@/components/pages/ProfileSetupPage';
+import RoleSelectPage from '@/components/pages/RoleSelectPage';
 
 export default function AppRouter() {
   return (
@@ -51,6 +52,7 @@ export default function AppRouter() {
               />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
+              <Route path="/choose-role" element={<RoleSelectPage />} />
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/profile/setup" element={
                 <MemberProtectedRoute messageToSignIn="Sign in to complete your profile">

@@ -66,16 +66,61 @@ export default function AssistantWidget() {
     try {
       // Build a condensed prompt from prior turns (simple linear transcript)
       const history = messages
-        .slice(-8) // cap context to last 8 messages for token efficiency
+        .slice(-8)
         .map(m => `${m.role === 'assistant' ? 'Assistant' : m.role === 'user' ? 'User' : 'System'}: ${m.content}`)
         .join('\n');
-      const prompt = history
-        ? `${history}\nUser: ${text}\nAssistant:`
-        : `User: ${text}\nAssistant:`;
-      const replyText = await generateApi(prompt);
-      const botMsg: ChatMessage = { id: makeId(), role: 'assistant', content: replyText, ts: Date.now() };
-      setMessages(prev => [...prev, botMsg]);
-      if (!isOpen) setUnread(u => u + 1);
+      const prompt = history ? `${history}\nUser: ${text}\nAssistant:` : `User: ${text}\nAssistant:`;
+
+      // Optimistic streaming placeholder message
+      const botId = makeId();
+      setMessages(prev => [...prev, { id: botId, role: 'assistant', content: '', ts: Date.now() }]);
+
+      let streamed = false;
+      try {
+        const res = await fetch('/api/ai/generate-stream', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ prompt })
+        });
+        if (!res.ok || !res.body) throw new Error('No stream');
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let full = '';
+        while (true) {
+          const { value, done } = await reader.read();
+            if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          // Parse SSE lines
+          const lines = chunk.split(/\n\n/).filter(Boolean);
+          for (const l of lines) {
+            const m = l.match(/^data: (.*)$/m);
+            if (!m) continue;
+            try {
+              const payload = JSON.parse(m[1]);
+              if (payload.token) {
+                full += payload.token;
+                streamed = true;
+                setMessages(prev => prev.map(msg => msg.id === botId ? { ...msg, content: full } : msg));
+              }
+              if (payload.done) {
+                if (!isOpen) setUnread(u => u + 1);
+              }
+            } catch { /* ignore parse */ }
+          }
+        }
+      } catch {
+        // Fallback to non-streaming endpoint
+      }
+      if (!streamed) {
+        try {
+          const replyText = await generateApi(prompt);
+          setMessages(prev => prev.map(msg => msg.id === botId ? { ...msg, content: replyText } : msg));
+          if (!isOpen) setUnread(u => u + 1);
+        } catch (e) {
+          setMessages(prev => prev.filter(m => m.id !== botId));
+          throw e;
+        }
+      }
     } catch (e) {
       setError('Sorry, the assistant is unavailable. Please try again.');
     } finally {

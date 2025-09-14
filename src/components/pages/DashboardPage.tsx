@@ -5,11 +5,34 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Image } from '@/components/ui/image';
 import { useMember } from '@/integrations';
+import { useEffect, useState } from 'react';
+import { getDb } from '@/integrations/members/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import { motion } from 'framer-motion';
 
 export default function DashboardPage() {
-  const { member } = useMember();
+  const { member, user } = useMember();
   const role = member?.role || 'buyer';
+  const [profileComplete, setProfileComplete] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const run = async () => {
+      if (!user) { setProfileComplete(null); return; }
+      try {
+        const db = getDb();
+        const ref = doc(db, 'users', user.uid);
+        const snap = await getDoc(ref);
+        if (snap.exists()) {
+          setProfileComplete(!!(snap.data() as any).profileComplete);
+        } else {
+          setProfileComplete(false);
+        }
+      } catch {
+        setProfileComplete(false);
+      }
+    };
+    run();
+  }, [user?.uid]);
 
   // Sample data for dashboard
   const recentOrders = [
@@ -71,6 +94,18 @@ export default function DashboardPage() {
     { label: 'Orders Received', value: '67', icon: ShoppingCart },
     { label: 'Average Rating', value: '4.8', icon: Star }
   ];
+
+  if (role === 'artisan' && profileComplete === false) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-8">
+        <div className="max-w-md text-center space-y-4">
+          <h1 className="font-heading text-2xl font-bold text-primary">Finish Your Profile</h1>
+          <p className="font-paragraph text-primary/70">Complete your artisan profile to unlock your dashboard and AI Copilot tools.</p>
+          <a href="/profile/setup" className="inline-block bg-neonaccent text-primary px-4 py-2 rounded-md font-heading font-bold hover:bg-neonaccent/90">Go to Profile Setup</a>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
