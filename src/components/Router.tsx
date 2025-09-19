@@ -66,9 +66,10 @@ export default function AppRouter() {
             <Routes>
               <Route path='/' element={<HomePage />} />
               <Route path='/discover' element={<DiscoverPage />} />
-              <Route path='/discovery' element={<DiscoveryPage />} />
+              <Route path='/discovery' element={<Navigate to='/discover' replace />} />
               <Route path='/product/:id' element={<ProductDetailPage />} />
               <Route path='/themes' element={<ThemesPage />} />
+              <Route path='/themes/:category' element={<ThemesPage />} />
               <Route path='/custom-requests' element={<CustomRequestsPage />} />
               <Route path='/community' element={<CommunityPage />} />
               <Route path='/about' element={<AboutPage />} />

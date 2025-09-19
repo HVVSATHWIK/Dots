@@ -87,24 +87,24 @@ export function MemberProvider({ children }: { children: React.ReactNode }) {
                 try { window.location.replace(next); } catch { /* noop */ }
               }
             }
-            // If role selection not made (still default buyer and no explicit session flag) allow optional redirect to chooser
+            // Only handle role redirection for dashboard routes to avoid navigation loops
             try {
+              const currentPath = window.location.pathname;
               const hasChosen = sessionStorage.getItem('dots_role_chosen') === '1';
               const db = getDb();
               const userDoc = await getDoc(doc(db, 'users', u.uid));
               const existingRole = (userDoc.exists() ? (userDoc.data() as any)?.role : null);
 
-              if (!hasChosen && !existingRole && !sessionStorage.getItem('dots_skip_role_prompt')) {
-                // Avoid infinite loops: only redirect if not already on chooser, login, or signup
-                if (!['/choose-role', '/login', '/signup'].includes(window.location.pathname)) {
+              // Only redirect if user is on /dashboard (not specific role dashboards)
+              if (currentPath === '/dashboard') {
+                if (existingRole === 'buyer') {
+                  window.history.replaceState({}, '', '/buyer/dashboard');
+                  return;
+                } else if (existingRole === 'artisan') {
+                  window.history.replaceState({}, '', '/artisan/dashboard');
+                  return;
+                } else if (!hasChosen && !sessionStorage.getItem('dots_skip_role_prompt')) {
                   window.history.replaceState({}, '', '/choose-role');
-                  return; // Don't continue with normal auth flow
-                }
-              } else if (existingRole) {
-                // User has a role, redirect to appropriate dashboard
-                const dashboardPath = existingRole === 'buyer' ? '/buyer/dashboard' : '/artisan/dashboard';
-                if (!['/buyer/dashboard', '/artisan/dashboard', '/dashboard'].includes(window.location.pathname)) {
-                  window.history.replaceState({}, '', dashboardPath);
                   return;
                 }
               }

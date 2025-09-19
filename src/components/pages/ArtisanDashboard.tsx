@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Package, DollarSign, ShoppingCart, Target, BarChart3, Users, TrendingUp, Award, Palette } from 'lucide-react';
+import { Package, DollarSign, ShoppingCart, Target, BarChart3, Users, TrendingUp, Award, Palette, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -20,6 +20,7 @@ export default function ArtisanDashboard() {
   const [products, setProducts] = useState<any[]>([]);
   const [profileComplete, setProfileComplete] = useState<boolean | null>(null);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
     const loadArtisanData = async () => {
@@ -32,7 +33,14 @@ export default function ArtisanDashboard() {
         const userRef = doc(db, 'users', user.uid);
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
-          setProfileComplete(!!(userSnap.data() as any).profileComplete);
+          const userData = userSnap.data() as any;
+          setProfileComplete(!!userData.profileComplete);
+          // Show onboarding for new artisans with no products
+          if (!userData.profileComplete || !userData.hasCreatedProduct) {
+            setShowOnboarding(true);
+          }
+        } else {
+          setShowOnboarding(true);
         }
 
         // Load recent sales/orders
@@ -153,8 +161,8 @@ export default function ArtisanDashboard() {
               </Link>
             </Button>
             <Button asChild variant="outline" className="w-full">
-              <Link to="/dashboard">
-                View Basic Dashboard
+              <Link to="/discover">
+                Browse Marketplace
               </Link>
             </Button>
           </div>
@@ -214,6 +222,75 @@ export default function ArtisanDashboard() {
             );
           })}
         </motion.div>
+
+        {/* New Artisan Onboarding */}
+        {showOnboarding && products.length === 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="mb-8"
+          >
+            <Card className="border-2 border-purple-200 bg-gradient-to-r from-purple-50 to-blue-50">
+              <CardContent className="p-8 text-center">
+                <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Palette className="w-10 h-10 text-purple-600" />
+                </div>
+                <h2 className="font-heading text-2xl font-bold text-primary mb-4">
+                  Welcome to Your Artisan Journey! ✨
+                </h2>
+                <p className="font-paragraph text-primary/70 mb-6 max-w-2xl mx-auto">
+                  Ready to share your beautiful crafts with the world? Our AI-powered tools will help you create compelling product listings, optimize pricing, and grow your artisan business.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                  <div className="bg-white p-4 rounded-lg shadow-sm">
+                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <span className="text-2xl">🤖</span>
+                    </div>
+                    <h3 className="font-heading font-bold text-sm text-primary mb-2">AI Assistant</h3>
+                    <p className="font-paragraph text-xs text-primary/60">Generate descriptions, titles, and pricing with AI</p>
+                  </div>
+                  <div className="bg-white p-4 rounded-lg shadow-sm">
+                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <span className="text-2xl">📊</span>
+                    </div>
+                    <h3 className="font-heading font-bold text-sm text-primary mb-2">Smart Analytics</h3>
+                    <p className="font-paragraph text-xs text-primary/60">Track sales, optimize pricing, grow your business</p>
+                  </div>
+                  <div className="bg-white p-4 rounded-lg shadow-sm">
+                    <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <span className="text-2xl">🔒</span>
+                    </div>
+                    <h3 className="font-heading font-bold text-sm text-primary mb-2">Authenticity Verified</h3>
+                    <p className="font-paragraph text-xs text-primary/60">Mint certificates to prove authenticity</p>
+                  </div>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Button asChild className="bg-purple-600 text-white hover:bg-purple-700 font-heading font-bold">
+                    <Link to="/copilot">
+                      <Wand2 className="w-4 h-4 mr-2" />
+                      Start with AI Copilot
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline" className="border-purple-300 text-purple-700 hover:bg-purple-50">
+                    <Link to="/profile/setup">
+                      <Award className="w-4 h-4 mr-2" />
+                      Complete Profile
+                    </Link>
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setShowOnboarding(false)}
+                    className="text-primary/60"
+                  >
+                    Maybe later
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
