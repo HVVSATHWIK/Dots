@@ -19,6 +19,7 @@ export default function BuyerDashboard() {
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
     const loadBuyerData = async () => {
@@ -48,6 +49,11 @@ export default function BuyerDashboard() {
           reviewsGiven: 9 // This would come from reviews collection
         };
         setStats(statsData);
+        
+        // Show onboarding for new buyers with no orders
+        if (orders.length === 0) {
+          setShowOnboarding(true);
+        }
 
         // Load personalized recommendations (this would be from AI/ML service)
         setRecommendations([
@@ -185,6 +191,75 @@ export default function BuyerDashboard() {
             );
           })}
         </motion.div>
+
+        {/* New Buyer Onboarding */}
+        {showOnboarding && recentOrders.length === 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="mb-8"
+          >
+            <Card className="border-2 border-blue-200 bg-gradient-to-r from-blue-50 to-purple-50">
+              <CardContent className="p-8 text-center">
+                <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Package className="w-10 h-10 text-blue-600" />
+                </div>
+                <h2 className="font-heading text-2xl font-bold text-primary mb-4">
+                  Welcome to DOTS Marketplace! 🌟
+                </h2>
+                <p className="font-paragraph text-primary/70 mb-6 max-w-2xl mx-auto">
+                  Discover authentic handcrafted treasures made by talented artisans across India. Each piece tells a story and supports traditional craftsmen.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                  <div className="bg-white p-4 rounded-lg shadow-sm">
+                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <span className="text-2xl">🎨</span>
+                    </div>
+                    <h3 className="font-heading font-bold text-sm text-primary mb-2">Authentic Crafts</h3>
+                    <p className="font-paragraph text-xs text-primary/60">Each product is verified authentic with AI-powered certificates</p>
+                  </div>
+                  <div className="bg-white p-4 rounded-lg shadow-sm">
+                    <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <span className="text-2xl">🤝</span>
+                    </div>
+                    <h3 className="font-heading font-bold text-sm text-primary mb-2">Support Artisans</h3>
+                    <p className="font-paragraph text-xs text-primary/60">Buy directly from makers and support traditional crafts</p>
+                  </div>
+                  <div className="bg-white p-4 rounded-lg shadow-sm">
+                    <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <span className="text-2xl">💎</span>
+                    </div>
+                    <h3 className="font-heading font-bold text-sm text-primary mb-2">Unique Collection</h3>
+                    <p className="font-paragraph text-xs text-primary/60">Find one-of-a-kind pieces you won't see anywhere else</p>
+                  </div>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Button asChild className="bg-blue-600 text-white hover:bg-blue-700 font-heading font-bold">
+                    <Link to="/discover">
+                      <Package className="w-4 h-4 mr-2" />
+                      Explore Marketplace
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline" className="border-blue-300 text-blue-700 hover:bg-blue-50">
+                    <Link to="/discover?category=trending">
+                      <Star className="w-4 h-4 mr-2" />
+                      See What's Trending
+                    </Link>
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setShowOnboarding(false)}
+                    className="text-primary/60"
+                  >
+                    Maybe later
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
