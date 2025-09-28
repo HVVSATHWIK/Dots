@@ -8,6 +8,7 @@ export interface EventMap {
   'trust.score.updated': { sellerId: string; score: number };
   'price.suggested': { listingId: string; recommended: number; currency: string };
   'assistant.interaction': { mode: string; userId?: string };
+  'assistant.fallback': { intent: string; userId?: string };
   'endorsement.added': { endorserId: string; sellerId: string; weight: number };
   'dispute.opened': { disputeId: string; sellerId: string; orderId: string };
   'generation.requested': { kind: string; userId?: string };
@@ -25,6 +26,7 @@ const handlers: { [K in EventName]: Handler<K>[] } = {
   'trust.score.updated': [],
   'price.suggested': [],
   'assistant.interaction': [],
+  'assistant.fallback': [],
   'endorsement.added': [],
   'dispute.opened': [],
   'generation.requested': [],

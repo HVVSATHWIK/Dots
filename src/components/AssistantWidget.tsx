@@ -25,6 +25,7 @@ export default function AssistantWidget() {
   const [mode, setMode] = React.useState<AssistantMode>(AssistantMode.General);
   const streamingEnabled = isFlagEnabled('assistantStreaming');
   const [isFallback, setIsFallback] = React.useState(false);
+  const [showFallbackInfo, setShowFallbackInfo] = React.useState(false);
   const endRef = React.useRef<HTMLDivElement | null>(null);
 
   // Keyboard shortcuts: Ctrl/Cmd + Shift + K to toggle; Esc to close
@@ -193,7 +194,23 @@ export default function AssistantWidget() {
                   <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-600 text-white">stream</span>
                 )}
                 {isFallback && (
-                  <span title="Local heuristic fallback (no API key)" className="text-[10px] px-2 py-0.5 rounded bg-amber-500 text-black">local fallback</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowFallbackInfo(o => !o)}
+                    className="relative text-[10px] px-2 py-0.5 rounded bg-amber-500 text-black focus:outline-none focus:ring-1"
+                    aria-expanded={showFallbackInfo}
+                    aria-label="Local fallback mode info"
+                    title="Local heuristic fallback (click for info)"
+                  >local fallback
+                    {showFallbackInfo && (
+                      <div role="tooltip" className="absolute z-10 top-full left-0 mt-1 w-64 text-[11px] p-2 rounded border bg-background shadow">
+                        <p className="mb-1 font-medium">Heuristic Mode</p>
+                        <p className="mb-1">Running without a Gemini API key. Responses use lightweight local rules.</p>
+                        <p className="mb-1">Set <code className='font-mono'>GEMINI_API_KEY</code> (and optional <code className='font-mono'>GEMINI_MODEL</code>) in your environment or .env file then restart to enable full AI.</p>
+                        <p className="text-muted-foreground">Badge disappears once real model replies are used.</p>
+                      </div>
+                    )}
+                  </button>
                 )}
               </div>
             </div>

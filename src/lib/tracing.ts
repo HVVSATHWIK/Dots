@@ -11,8 +11,9 @@ export interface TraceEventBase {
 
 export type TraceSink = (event: TraceEventBase) => void;
 
-// Global switch to disable all tracing/logging functionality
-const TRACING_ENABLED = false;
+// Global switch to enable tracing/logging functionality via env flag.
+// Set VITE_ENABLE_TRACING=1 in your .env (and rebuild) to activate ring buffer & console sink.
+const TRACING_ENABLED = (import.meta as any)?.env?.VITE_ENABLE_TRACING === '1' || (typeof process !== 'undefined' && process.env?.VITE_ENABLE_TRACING === '1');
 
 const sinks: TraceSink[] = [];
 // In-memory ring buffer for recent traces (dev tooling)
