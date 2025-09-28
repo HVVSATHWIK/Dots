@@ -167,17 +167,24 @@ export async function generateRaw(prompt: string, opts?: { model?: string; syste
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ prompt, model: opts?.model, system: opts?.system }),
   });
+  const ct = res.headers.get('content-type') || '';
+  // Attempt to parse JSON even if status not OK so we can surface heuristic fallback reply
+  if (ct.includes('application/json')) {
+    const json = await res.json().catch(() => ({}));
+    const reply = String(json.reply ?? json.text ?? '');
+    if (!res.ok && !reply) {
+      const text = JSON.stringify(json).slice(0, 240);
+      throw new Error(`AI generate error (${res.status}): ${text}`);
+    }
+    return { reply, fallback: !!json.fallback };
+  }
+  // Non-JSON failure path
   if (!res.ok) {
     const text = await res.text().catch(() => '');
     throw new Error(`AI generate error (${res.status}): ${text.slice(0, 240)}`);
   }
-  const ct = res.headers.get('content-type') || '';
-  if (!ct.includes('application/json')) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`AI generate non-JSON response: ${text.slice(0, 240)}`);
-  }
-  const json = await res.json();
-  return { reply: String(json.reply ?? json.text ?? ''), fallback: json.fallback };
+  const text = await res.text().catch(() => '');
+  return { reply: text.slice(0, 240), fallback: true };
 }
 
 export async function generateImage(input: GenerateImageInput): Promise<GenerateImageResult> {

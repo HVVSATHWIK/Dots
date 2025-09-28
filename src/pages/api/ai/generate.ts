@@ -37,7 +37,18 @@ export const POST: APIRoute = async ({ request }) => {
     return new Response(JSON.stringify({ reply }), { status: 200, headers: { 'content-type': 'application/json' } });
   } catch (e: any) {
     const msg = e?.message || 'error';
-    const status = /not found|404/i.test(msg) ? 404 : /unauth|denied|permission/i.test(msg) ? 401 : 500;
-    return new Response(JSON.stringify({ error: msg, status }), { status });
+    const status = /not found|model.*not|404/i.test(msg) ? 404 : /unauth|denied|permission/i.test(msg) ? 401 : 500;
+    // If the failure looks like a model or permission issue, provide heuristic fallback instead of hard failing.
+    if (status === 404 || status === 401) {
+      try {
+        const fallback = fallbackGenerate(typeof e?.prompt === 'string' ? e.prompt : (typeof e?.input === 'string' ? e.input : ''));
+        console.warn('[ai/generate] model error -> heuristic fallback', { message: msg, status });
+        return new Response(JSON.stringify({ error: msg, status, fallback: true, reply: fallback, reason: 'model_error' }), { status });
+      } catch {
+        // continue to return original error
+      }
+    }
+    console.error('[ai/generate] unhandled error', msg);
+    return new Response(JSON.stringify({ error: msg, status }), { status, headers: { 'content-type': 'application/json' } });
   }
 };
