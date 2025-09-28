@@ -107,15 +107,37 @@ export function fallbackChatReply(messages: FallbackChatMessage[]): string {
 }
 
 export function fallbackGenerate(prompt: string): string {
-  const p = prompt.toLowerCase();
-  if (p.includes('title')) {
+  // The generate endpoint passes a flattened transcript like:
+  //   User(general): hi\nAssistant(general): <reply>\nUser(general): what is pottery\nAssistant(general):
+  // We only want to look at the LAST user turn – otherwise earlier assistant text containing words like
+  // "tags" or "pricing" can incorrectly trigger tag/pricing heuristics.
+  function extractLastUserTurn(input: string): string {
+    const re = /User(?:\([^)]*\))?:\s*(.*)/g;
+    let m: RegExpExecArray | null; let last: string | null = null;
+    while ((m = re.exec(input)) !== null) { last = m[1]; }
+    return (last || input).trim();
+  }
+  const lastUser = extractLastUserTurn(prompt);
+  const p = lastUser.toLowerCase();
+
+  // Direct generation intents
+  if (/(^|\b)(generate|suggest|make).*(title)/.test(p) || (p.includes('title') && p.length < 140)) {
     return 'Handcrafted Ceramic Mug – Speckled Stoneware, 12oz, Minimal Rustic Finish';
   }
-  if (p.includes('tags')) {
+  if (/(^|\b)(generate|suggest|give|list).*(tags|keywords)/.test(p) || /\btags?\b/.test(p)) {
     return 'ceramic mug, handmade pottery, stoneware cup, rustic kitchen, artisan drinkware, speckled glaze, coffee lover gift, sustainable craft';
   }
-  if (p.includes('pricing')) {
+  if (/pricing|price range|how much|cost/i.test(p)) {
     return 'Suggested price range: ₹850–₹1050 (materials ~₹150, labor 1.5h @ ₹350/h, overhead & margin included).';
+  }
+  if (/what is pottery|what.*pottery|define pottery|pottery basics|pottery meaning/.test(p)) {
+    return 'Pottery is the craft of shaping clay (earthenware, stoneware, porcelain) and firing it to create functional or decorative pieces. Key factors: clay body, forming method (wheel, handbuild), firing temperature, glaze chemistry, and finishing. I can help you turn a specific piece description into a title, tags, and pricing guidance—just describe the item.';
+  }
+  if (/pottery|ceramic|stoneware|earthenware|clay/.test(p)) {
+    return 'Share the piece details (form, clay type, glaze/style, size, functional use). I can suggest a title, description outline, tag list, and pricing range.';
+  }
+  if (p.length < 4) {
+    return 'Local development fallback: add more detail (e.g. "Generate tags for a handwoven cotton table runner with geometric pattern").';
   }
   return 'Local development fallback: provide more context (e.g. "Generate tags for a handwoven cotton table runner with geometric pattern").';
 }
