@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { X, ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+// Removed unused Card components & Badge
 import { motion, AnimatePresence } from 'framer-motion';
 import Icon from '@/components/ui/icons';
 import { useTranslation } from 'react-i18next';

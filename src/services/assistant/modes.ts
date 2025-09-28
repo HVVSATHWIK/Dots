@@ -55,7 +55,7 @@ const handlers: Record<AssistantMode, ModeHandler> = {
   [AssistantMode.Pricing]: async (ctx) => {
     // Expect structured payload with pricing factors; fallback defaults.
     const raw = { baseCost: 0, materialCost: 0, ...ctx.payload };
-    let suggestion; let error: string | undefined;
+  let suggestion: ReturnType<typeof suggestPrice> | undefined; let error: string | undefined;
     try {
       const parsed = PriceInputSchema.partial({ currency: true }).merge(PriceInputSchema.pick({ currency: true })).parse(raw);
       suggestion = suggestPrice({

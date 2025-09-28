@@ -4,7 +4,7 @@
  * Vector storage: Firestore collection `embeddings` { refType, refId, vector: number[], dim, model, updatedAt }
  */
 import { getDb } from '@/integrations/members/firebase';
-import { addDoc, collection, doc, getDoc, getDocs, query, where, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, getDoc, getDocs, query, where, updateDoc } from 'firebase/firestore';
 import { incr, METRIC } from '@/lib/metrics';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { runWithTrace, recordTokenUsage } from '@/lib/tracing';
@@ -36,7 +36,6 @@ export async function generateEmbedding(text: string): Promise<number[]> {
   return runWithTrace(async () => {
     const client = getClient();
     if (!client) {
-      const start = performance.now();
       const dim = 64;
       const vec = new Array(dim).fill(0);
       for (let i = 0; i < text.length; i++) {

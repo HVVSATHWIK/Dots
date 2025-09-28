@@ -6,7 +6,6 @@ export interface MemorySummary { userId: string; summary: string; updatedAt: num
 // Simple reducer: keep last N interactions and compress by sentence selection and truncation.
 export function summarizeInteractions(userId: string, history: Interaction[], maxLen = 800): MemorySummary {
   const last = history.slice(-20); // window
-  const text = last.map(i => `${i.role === 'user' ? 'U' : 'A'}:${i.content}`).join('\n');
   // Naive compression: pick first sentence of each user message + key tokens.
   const userSentences = last.filter(i => i.role === 'user').map(i => (i.content.split(/[.!?]/)[0]||'').trim());
   let combined = userSentences.join('. ');

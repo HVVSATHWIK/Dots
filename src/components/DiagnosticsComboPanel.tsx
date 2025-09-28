@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface TrustStats { hits: number; misses: number; hitRatio: number; }
-interface MetricsPayload { counters: Record<string, number>; trust: TrustStats }
 interface Flags { [k: string]: boolean }
 
 interface EvalRow { query: string; precision: number; threshold: number; passed: boolean; }

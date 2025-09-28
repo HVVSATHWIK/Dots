@@ -12,7 +12,7 @@ export function relatedListings(listingId: string, limit = 5): { id: string; sco
     byUser[e.userId].add(e.listingId);
   }
   const scores: Record<string, number> = {};
-  for (const [user, set] of Object.entries(byUser)) {
+  for (const [, set] of Object.entries(byUser)) {
     if (!set.has(listingId)) continue;
     for (const other of set) {
       if (other === listingId) continue;

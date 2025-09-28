@@ -6,7 +6,6 @@ import { ToastProvider } from '@/components/ui/toast-provider';
 import Layout from '@/components/Layout';
 import HomePage from '@/components/pages/HomePage';
 import DiscoverPage from '@/components/pages/DiscoverPage';
-import DiscoveryPage from '@/components/pages/DiscoveryPage';
 import ProductDetailPage from '@/components/pages/ProductDetailPage';
 import ThemesPage from '@/components/pages/ThemesPage';
 import CustomRequestsPage from '@/components/pages/CustomRequestsPage';

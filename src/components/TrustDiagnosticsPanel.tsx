@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface TrustStats { hits: number; misses: number; hitRatio: number; }
 interface Flags { [k: string]: boolean }
