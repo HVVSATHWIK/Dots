@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useMember } from '@/integrations';
 import { generate } from '@/integrations/ai';
+import { extractJson, isHtmlPayload } from '@/lib/json';
 import { motion } from 'framer-motion';
 
 interface PricingRecommendation {
@@ -82,8 +83,14 @@ Consider factors like:
         system: 'You are a pricing strategist specializing in handmade artisan products. Provide realistic, profitable pricing recommendations based on Indian market conditions.'
       });
 
-      // Parse the JSON response
-      const parsed = JSON.parse(response);
+      // Parse the JSON response robustly
+      if (isHtmlPayload(response)) {
+        throw new Error('AI endpoint returned HTML instead of JSON');
+      }
+      const parsed = extractJson<PricingRecommendation>(response);
+      if (!parsed) {
+        throw new Error('Failed to parse AI response as JSON');
+      }
       setRecommendation(parsed);
       setActiveTab('results');
     } catch (error) {

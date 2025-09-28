@@ -2,7 +2,11 @@ import * as React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { MessageCircle, X, Minus, Send } from 'lucide-react';
-import { generate as generateApi } from '@/integrations/ai';
+import { generateRaw } from '@/integrations/ai';
+import { isFlagEnabled } from '@/lib/feature-flags';
+import { AssistantMode } from '@/services/assistant/modes';
+import { publish } from '@/lib/event-bus';
+import { incr, METRIC } from '@/lib/metrics';
 
 type ChatRole = 'user' | 'assistant' | 'system';
 interface ChatMessage { id: string; role: ChatRole; content: string; ts: number }
@@ -18,6 +22,9 @@ export default function AssistantWidget() {
   const [messages, setMessages] = React.useState<ChatMessage[]>([]);
   const [unread, setUnread] = React.useState(0);
   const [error, setError] = React.useState<string | null>(null);
+  const [mode, setMode] = React.useState<AssistantMode>(AssistantMode.General);
+  const streamingEnabled = isFlagEnabled('assistantStreaming');
+  const [isFallback, setIsFallback] = React.useState(false);
   const endRef = React.useRef<HTMLDivElement | null>(null);
 
   // Keyboard shortcuts: Ctrl/Cmd + Shift + K to toggle; Esc to close
@@ -28,10 +35,17 @@ export default function AssistantWidget() {
       const mod = isMac ? e.metaKey : e.ctrlKey;
       if (mod && e.shiftKey && (e.key === 'K' || e.key === 'k')) {
         e.preventDefault();
-        setIsOpen(prev => !prev);
+        setIsOpen(prev => {
+          const next = !prev;
+          publish('assistant.interaction', { mode: next ? 'open' : 'close' });
+          return next;
+        });
         if (!isOpen) setUnread(0);
       }
-      if (e.key === 'Escape' && isOpen) setIsOpen(false);
+      if (e.key === 'Escape' && isOpen) {
+        publish('assistant.interaction', { mode: 'close' });
+        setIsOpen(false);
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -58,6 +72,8 @@ export default function AssistantWidget() {
     if (!text || isSending) return;
     setError(null);
     setIsSending(true);
+    publish('assistant.interaction', { mode: streamingEnabled ? 'stream' : 'batch' });
+    incr(METRIC.ASSISTANT_RUN);
 
     const userMsg: ChatMessage = { id: makeId(), role: 'user', content: text, ts: Date.now() };
     setMessages(prev => [...prev, userMsg]);
@@ -69,7 +85,7 @@ export default function AssistantWidget() {
         .slice(-8)
         .map(m => `${m.role === 'assistant' ? 'Assistant' : m.role === 'user' ? 'User' : 'System'}: ${m.content}`)
         .join('\n');
-      const prompt = history ? `${history}\nUser: ${text}\nAssistant:` : `User: ${text}\nAssistant:`;
+  const prompt = history ? `${history}\nUser(${mode}): ${text}\nAssistant(${mode}):` : `User(${mode}): ${text}\nAssistant(${mode}):`;
 
       // Optimistic streaming placeholder message
       const botId = makeId();
@@ -77,12 +93,13 @@ export default function AssistantWidget() {
 
       let streamed = false;
       try {
-        const res = await fetch('/api/ai/generate-stream', {
+        const res = streamingEnabled ? await fetch('/api/ai/generate-stream', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ prompt })
-        });
-        if (!res.ok || !res.body) throw new Error('No stream');
+        }) : null;
+        if (streamingEnabled) {
+          if (!res || !res.ok || !res.body) throw new Error('No stream');
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
         let full = '';
@@ -103,19 +120,24 @@ export default function AssistantWidget() {
                 setMessages(prev => prev.map(msg => msg.id === botId ? { ...msg, content: full } : msg));
               }
               if (payload.done) {
+                if (payload.fallback) setIsFallback(true);
                 if (!isOpen) setUnread(u => u + 1);
+                publish('assistant.interaction', { mode: 'stream.done' });
               }
             } catch { /* ignore parse */ }
           }
+        }
         }
       } catch {
         // Fallback to non-streaming endpoint
       }
       if (!streamed) {
         try {
-          const replyText = await generateApi(prompt);
-          setMessages(prev => prev.map(msg => msg.id === botId ? { ...msg, content: replyText } : msg));
+          const { reply, fallback } = await generateRaw(prompt);
+          if (fallback) setIsFallback(true);
+          setMessages(prev => prev.map(msg => msg.id === botId ? { ...msg, content: reply } : msg));
           if (!isOpen) setUnread(u => u + 1);
+          publish('assistant.interaction', { mode: 'batch.done' });
         } catch (e) {
           setMessages(prev => prev.filter(m => m.id !== botId));
           throw e;
@@ -141,7 +163,7 @@ export default function AssistantWidget() {
       <button
         title="Ask DOTS Assistant"
         aria-label="Open DOTS Assistant"
-        onClick={() => { setIsOpen(o => !o); if (!isOpen) setUnread(0); }}
+        onClick={() => { setIsOpen(o => { const next = !o; publish('assistant.interaction', { mode: next ? 'open' : 'close' }); return next; }); if (!isOpen) setUnread(0); }}
   className="fixed bottom-4 right-4 z-[100] inline-flex items-center justify-center rounded-full shadow-lg border bg-background/90 backdrop-blur-md w-12 h-12 hover:shadow-xl"
       >
         <MessageCircle className="w-6 h-6" />
@@ -161,12 +183,25 @@ export default function AssistantWidget() {
         >
           {/* Header */}
           <div className="flex items-center justify-between px-3 py-2 border-b">
-            <div className="text-sm font-medium">DOTS Assistant</div>
+            <div className="flex flex-col gap-1">
+              <div className="text-sm font-medium">DOTS Assistant</div>
+              <div className="flex gap-1 flex-wrap">
+                {Object.values(AssistantMode).map(m => (
+                  <button key={m} onClick={() => setMode(m)} className={`px-2 py-0.5 rounded text-xs border ${mode===m?'bg-primary text-primary-foreground':'bg-muted'}`}>{m}</button>
+                ))}
+                {streamingEnabled && (
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-600 text-white">stream</span>
+                )}
+                {isFallback && (
+                  <span title="Local heuristic fallback (no API key)" className="text-[10px] px-2 py-0.5 rounded bg-amber-500 text-black">local fallback</span>
+                )}
+              </div>
+            </div>
             <div className="flex items-center gap-1">
-              <button aria-label="Minimize" onClick={() => setIsOpen(false)} className="p-1 rounded hover:bg-accent">
+              <button aria-label="Minimize" onClick={() => { publish('assistant.interaction', { mode: 'close' }); setIsOpen(false); }} className="p-1 rounded hover:bg-accent">
                 <Minus className="w-4 h-4" />
               </button>
-              <button aria-label="Close" onClick={() => setIsOpen(false)} className="p-1 rounded hover:bg-accent">
+              <button aria-label="Close" onClick={() => { publish('assistant.interaction', { mode: 'close' }); setIsOpen(false); }} className="p-1 rounded hover:bg-accent">
                 <X className="w-4 h-4" />
               </button>
             </div>

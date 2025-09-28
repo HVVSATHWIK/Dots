@@ -1,5 +1,8 @@
 import type { APIRoute } from 'astro';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { publish } from '@/lib/event-bus';
+import { incr, METRIC } from '@/lib/metrics';
+import { classifyFallbackIntent } from '@/services/assistant/fallback';
 
 export const prerender = false;
 
@@ -7,6 +10,9 @@ type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string };
 
 export const POST: APIRoute = async ({ request }) => {
 	try {
+		publish('generation.requested', { kind: 'chat' });
+		publish('assistant.interaction', { mode: 'batch' });
+		incr(METRIC.ASSISTANT_RUN);
 		const { messages, model } = await request.json();
 
 		// DOTS-wide assistant system prompt
@@ -28,13 +34,10 @@ You are the DOTS Assistant.
 		];
 		const apiKey = (import.meta.env.GEMINI_API_KEY as string | undefined) ?? (process.env.GEMINI_API_KEY as string | undefined);
 
-		// Fallback stub when GEMINI_API_KEY is not configured
+		// Fallback dynamic reply when GEMINI_API_KEY is not configured
 		if (!apiKey) {
-			const lastUser = [...effectiveMessages].reverse().find(m => m.role === 'user');
-			return new Response(JSON.stringify({ reply: `Stubbed reply: ${lastUser?.content ?? 'Hello'}` }), {
-				status: 200,
-				headers: { 'content-type': 'application/json' },
-			});
+			const { reply, intent } = classifyFallbackIntent(effectiveMessages);
+			return new Response(JSON.stringify({ reply, fallback: true, intent }), { status: 200, headers: { 'content-type': 'application/json' } });
 		}
 
 		const genAI = new GoogleGenerativeAI(apiKey);

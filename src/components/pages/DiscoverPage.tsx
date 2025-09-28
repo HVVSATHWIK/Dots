@@ -10,6 +10,7 @@ import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { motion } from 'framer-motion';
+import Icon from '@/components/ui/icons';
 import { useMember } from '@/integrations';
 
 export default function DiscoverPage() {
@@ -414,8 +415,9 @@ export default function DiscoverPage() {
             </div>
 
             <div className="bg-white/80 backdrop-blur-sm rounded-lg p-8 border-2 border-neonaccent">
-              <h2 className="font-heading text-2xl font-bold text-primary mb-4">
-                🔒 Sign Up to Unlock Full Access
+              <h2 className="font-heading text-2xl font-bold text-primary mb-4 flex items-center gap-2">
+                <Icon name="lock" size={24} className="text-primary" />
+                Sign Up to Unlock Full Access
               </h2>
               <p className="font-paragraph text-primary/70 mb-6">
                 Create your account to browse our complete collection, add items to cart, 

@@ -1,5 +1,7 @@
 import type { APIRoute } from 'astro';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { publish } from '@/lib/event-bus';
+import { incr, METRIC } from '@/lib/metrics';
 
 export const prerender = false;
 
@@ -31,6 +33,8 @@ function extractJson(text: string) {
 
 export const POST: APIRoute = async ({ request }) => {
   try {
+    publish('generation.requested', { kind: 'listing-pack' });
+    incr(METRIC.ASSISTANT_RUN);
     const form = await request.formData();
     const languages = JSON.parse(String(form.get('languages') ?? '[]')) as string[];
     const photoTheme = String(form.get('photoTheme') ?? '');
@@ -42,7 +46,28 @@ export const POST: APIRoute = async ({ request }) => {
 
   const apiKey = (import.meta.env.GEMINI_API_KEY as string | undefined) ?? (process.env.GEMINI_API_KEY as string | undefined);
     if (!apiKey) {
-      throw new Error('Server missing GEMINI_API_KEY');
+      // Graceful stub response when Gemini key is missing
+      const wantsHindi = languages.includes('hi');
+      const stub = {
+        stub: true,
+        note: 'No GEMINI_API_KEY configured; returning stub listing pack.',
+        title: { en: 'Handcrafted Artisan Piece', ...(wantsHindi ? { hi: 'हस्तनिर्मित कला वस्तु' } : {}) },
+        description: {
+          en: 'A unique, handcrafted item made with care by an Indian artisan. Perfect for gifting or adding charm to your home.',
+          ...(wantsHindi ? { hi: 'एक अनोखी, हस्तनिर्मित वस्तु जो भारतीय कारीगर द्वारा प्रेम से बनाई गई है। उपहार देने या घर की शोभा बढ़ाने के लिए उत्तम।' } : {})
+        },
+        tags: ['handmade', 'artisan', 'craft', 'heritage'],
+        price: { min: 1200, max: 2800, rationale: 'Estimated INR range for similar handmade crafts.' },
+        assets: { cleanedImages: [], poster: undefined, catalogCard: undefined },
+        social: {
+          caption: {
+            en: 'Discover authentic handcrafted beauty. #Handmade #Artisan #Craft',
+            ...(wantsHindi ? { hi: 'ख़री सच्ची हस्तनिर्मित खूबसूरती देखें। #हस्तनिर्मित #कारीगर #कला' } : {})
+          }
+        },
+        meta: { artisanName: 'Unknown Artisan' }
+      };
+      return new Response(JSON.stringify(stub), { status: 200, headers: { 'content-type': 'application/json' } });
     }
 
   const genAI = new GoogleGenerativeAI(apiKey);

@@ -8,6 +8,7 @@ import { useMember } from '@/integrations';
 import { getDb } from '@/integrations/members/firebase';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { motion } from 'framer-motion';
+import Icon from '@/components/ui/icons';
 
 export default function AnalyticsPage() {
   const { user } = useMember();
@@ -334,7 +335,10 @@ export default function AnalyticsPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="p-4 bg-blue-50 rounded-lg">
-                    <h4 className="font-heading font-bold text-sm text-primary mb-2">💡 Pricing Strategy</h4>
+                    <h4 className="font-heading font-bold text-sm text-primary mb-2 flex items-center gap-2">
+                      <Icon name="lightbulb" size={16} className="text-blue-600" />
+                      Pricing Strategy
+                    </h4>
                     <p className="font-paragraph text-sm text-primary/70">
                       Your average order value of ₹{Math.round(analytics?.avgOrderValue || 0)} is
                       {analytics?.avgOrderValue > 850 ? ' above' : ' below'} the market average.
@@ -343,7 +347,10 @@ export default function AnalyticsPage() {
                   </div>
 
                   <div className="p-4 bg-green-50 rounded-lg">
-                    <h4 className="font-heading font-bold text-sm text-primary mb-2">📈 Growth Opportunities</h4>
+                    <h4 className="font-heading font-bold text-sm text-primary mb-2 flex items-center gap-2">
+                      <Icon name="trending" size={16} className="text-green-600" />
+                      Growth Opportunities
+                    </h4>
                     <p className="font-paragraph text-sm text-primary/70">
                       Your {analytics?.growth || 0}% monthly growth rate is
                       {parseFloat(analytics?.growth || 0) > 10 ? ' excellent' : ' good'}.
@@ -361,7 +368,10 @@ export default function AnalyticsPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="p-4 bg-purple-50 rounded-lg">
-                    <h4 className="font-heading font-bold text-sm text-primary mb-2">🎯 Next Steps</h4>
+                    <h4 className="font-heading font-bold text-sm text-primary mb-2 flex items-center gap-2">
+                      <Icon name="target" size={16} className="text-purple-600" />
+                      Next Steps
+                    </h4>
                     <ul className="font-paragraph text-sm text-primary/70 space-y-1">
                       <li>• Use AI Copilot to create listings for similar products</li>
                       <li>• Focus on photography improvements for better conversion</li>

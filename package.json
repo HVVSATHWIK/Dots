@@ -12,7 +12,10 @@
     "release": "wix release",
     "env": "wix env pull",
     "check": "npx astro check --js-only",
+    "test": "vitest run",
     "test:run": "vitest run",
+    "eval": "node ./scripts/eval-search.js",
+    "ci": "vitest run && node ./scripts/eval-search.js",
     "install-template": "npm i --force --legacy-peer-deps --include=dev --registry=https://registry.npmjs.org"
   },
   "dependencies": {
@@ -119,6 +122,8 @@
     "tailwindcss": "^3.4.14",
     "tailwindcss-animate": "^1.0.7",
     "three": "^0.177.0",
+  "@react-three/fiber": "^9.0.0",
+  "@react-three/drei": "^9.111.0",
     "uuid": "^11.1.0",
     "vaul": "^1.1.2",
     "vite-plugin-node-polyfills": "^0.23.0",

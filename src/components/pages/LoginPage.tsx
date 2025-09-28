@@ -307,7 +307,7 @@ export default function LoginPage() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full h-12 bg-primary text-primary-foreground hover:bg-primary/90 font-heading font-bold text-base"
+                className="btn-primary w-full h-12 font-heading font-bold text-base"
               >
                 {loading ? (
                   <>
@@ -361,7 +361,7 @@ export default function LoginPage() {
               <p className="font-paragraph text-sm text-primary/70">
                 New to DOTS?{' '}
                 <Link 
-                  to="/signup" 
+                  to={`/signup?next=${encodeURIComponent(next)}`} 
                   className="text-neonaccent hover:underline font-medium"
                 >
                   Create an account

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,6 +14,7 @@ import { useMember } from '@/integrations';
 import { useToast } from '@/hooks/use-toast';
 import { Eye, EyeOff, Loader2, UserPlus, X } from 'lucide-react';
 import { motion } from 'framer-motion';
+import Icon from '@/components/ui/icons';
 
 const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const passRe = /^[A-Za-z0-9!*@$]+$/;
@@ -38,6 +39,8 @@ function mapError(e: any): string {
 
 export default function SignupPage() {
   const nav = useNavigate();
+  const [searchParams] = useSearchParams();
+  const next = searchParams.get('next') || '';
   const { actions } = useMember();
   const { toast } = useToast();
   
@@ -142,8 +145,8 @@ export default function SignupPage() {
         });
       }
 
-      // Redirect based on role
-      const redirectPath = role === 'artisan' ? '/profile/setup' : '/buyer/dashboard';
+      // Redirect: prefer next param if provided, otherwise role-based default
+      const redirectPath = next || (role === 'artisan' ? '/profile/setup' : '/buyer/dashboard');
       console.log('Redirecting to:', redirectPath);
       nav(redirectPath, { replace: true });
     } catch (e: any) {
@@ -183,7 +186,7 @@ export default function SignupPage() {
       );
 
       await Promise.race([actions.login(), timeout]);
-      const redirectPath = role === 'artisan' ? '/profile/setup' : '/buyer/dashboard';
+      const redirectPath = next || (role === 'artisan' ? '/profile/setup' : '/buyer/dashboard');
       console.log('Google signup redirecting to:', redirectPath);
       nav(redirectPath, { replace: true });
     } catch (e: any) {
@@ -291,7 +294,7 @@ export default function SignupPage() {
                 </div>
                 {!role && (
                   <p className="text-sm text-amber-600 flex items-center gap-1">
-                    <span className="text-amber-500">⚠️</span>
+                    <Icon name="alert" size={16} className="text-amber-500" />
                     Please select your role to continue
                   </p>
                 )}
@@ -435,7 +438,7 @@ export default function SignupPage() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full h-12 bg-neonaccent text-primary hover:bg-neonaccent/90 font-heading font-bold text-base"
+                className="btn-primary w-full h-12 font-heading font-bold text-base"
               >
                 {loading ? (
                   <>
@@ -493,7 +496,7 @@ export default function SignupPage() {
               <p className="font-paragraph text-sm text-primary/70">
                 Already have an account?{' '}
                 <Link 
-                  to="/login" 
+                  to={`/login?next=${encodeURIComponent(next)}`} 
                   className="text-neonaccent hover:underline font-medium"
                 >
                   Sign in here

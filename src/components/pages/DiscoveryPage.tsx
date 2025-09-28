@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Search, Heart, Star, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +9,9 @@ import { Image } from '@/components/ui/image';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useMember } from '@/integrations';
 import { generate } from '@/integrations/ai';
+import { extractJson, isHtmlPayload } from '@/lib/json';
 import { motion } from 'framer-motion';
+import Icon from '@/components/ui/icons';
 
 interface Product {
   id: string;
@@ -31,6 +34,7 @@ interface AIRecommendation {
 }
 
 export default function DiscoveryPage() {
+  const { t } = useTranslation();
   const { } = useMember();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -79,12 +83,12 @@ export default function DiscoveryPage() {
   ];
 
   const categories = [
-    { id: 'all', name: 'All Categories', icon: '🛍️' },
-    { id: 'textiles', name: 'Textiles', icon: '🧵' },
-    { id: 'pottery', name: 'Pottery', icon: '🏺' },
-    { id: 'jewelry', name: 'Jewelry', icon: '💍' },
-    { id: 'woodwork', name: 'Woodwork', icon: '🪵' },
-    { id: 'leather', name: 'Leather', icon: '👜' }
+    { id: 'all', name: 'All Categories', icon: <Icon name="shopping-bag" size={16} /> },
+    { id: 'textiles', name: 'Textiles', icon: <Icon name="thread" size={16} /> },
+    { id: 'pottery', name: 'Pottery', icon: <Icon name="vase" size={16} /> },
+    { id: 'jewelry', name: 'Jewelry', icon: <Icon name="gem" size={16} /> },
+    { id: 'woodwork', name: 'Woodwork', icon: <Icon name="hammer" size={16} /> },
+    { id: 'leather', name: 'Leather', icon: <Icon name="shopping-bag" size={16} /> }
   ];
 
   const generateAIRecommendations = async () => {
@@ -133,8 +137,11 @@ Focus on authentic Indian handicrafts and traditional craftsmanship.
         system: 'You are a product discovery expert for handmade artisan products. Create engaging, personalized recommendations that help buyers discover unique crafts.'
       });
 
-      const parsed = JSON.parse(response);
-      setAiRecommendations(parsed.recommendations || []);
+      if (isHtmlPayload(response)) {
+        throw new Error('AI endpoint returned HTML instead of JSON');
+      }
+      const parsed = extractJson<{ recommendations: AIRecommendation[] }>(response);
+      setAiRecommendations(parsed?.recommendations || []);
     } catch (error) {
       console.error('Error generating recommendations:', error);
       // Fallback to mock recommendations
@@ -173,18 +180,18 @@ Focus on authentic Indian handicrafts and traditional craftsmanship.
           className="mb-8"
         >
           <h1 className="font-heading text-3xl font-bold text-primary mb-2">
-            Discover Artisan Crafts
+            {t('discover.title')}
           </h1>
           <p className="font-paragraph text-primary/70">
-            Find unique handmade treasures from skilled artisans across India
+            {t('discover.subtitle')}
           </p>
         </motion.div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="discover">Discover</TabsTrigger>
-            <TabsTrigger value="search">Search & Filter</TabsTrigger>
-            <TabsTrigger value="ai">AI Recommendations</TabsTrigger>
+            <TabsTrigger value="discover">{t('discover.tabs.discover')}</TabsTrigger>
+            <TabsTrigger value="search">{t('discover.tabs.search')}</TabsTrigger>
+            <TabsTrigger value="ai">{t('discover.tabs.ai')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="discover" className="space-y-6">
@@ -396,7 +403,7 @@ Focus on authentic Indian handicrafts and traditional craftsmanship.
             {loading ? (
               <div className="text-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-                <p className="text-muted-foreground">Generating personalized recommendations...</p>
+                <p className="text-muted-foreground">{t('discover.loading')}</p>
               </div>
             ) : (
               <div className="space-y-8">
@@ -468,7 +475,7 @@ Focus on authentic Indian handicrafts and traditional craftsmanship.
                     className="bg-neonaccent text-primary hover:bg-neonaccent/90"
                   >
                     <Sparkles className="w-4 h-4 mr-2" />
-                    Refresh AI Recommendations
+                    {t('discover.refresh')}
                   </Button>
                 </div>
               </div>

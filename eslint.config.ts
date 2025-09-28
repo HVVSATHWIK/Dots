@@ -4,7 +4,8 @@ import eslintPluginAstro from 'eslint-plugin-astro';
 import importPlugin from 'eslint-plugin-import';
 import reactPlugin from 'eslint-plugin-react';
 import globals from 'globals';
-import useImageComponent from './eslint-rules/use-image-component';
+import useImageComponent from './eslint-rules/use-image-components';
+import noDirectFirestore from './eslint-rules/no-direct-firestore';
 
 export default [
   ...eslintPluginAstro.configs.recommended,
@@ -19,6 +20,7 @@ export default [
       'custom': {
         rules: {
           'use-image-component': useImageComponent,
+          'no-direct-firestore': noDirectFirestore,
         },
       },
     },
@@ -51,7 +53,8 @@ export default [
     },
     files: ['**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx'],
     rules: {
-      'custom/use-image-component': 'error',
+  'custom/use-image-component': 'error',
+  'custom/no-direct-firestore': 'error',
       'no-unused-vars': 'off',
       '@typescript-eslint/no-unused-vars': 'off',
       '@typescript-eslint/no-unused-expressions': 'off',

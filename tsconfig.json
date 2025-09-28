@@ -41,6 +41,8 @@
   },
   "include": [
     "src",
-    "integrations"
+    "integrations",
+    "tests",
+    "scripts"
   ]
 }

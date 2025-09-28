@@ -1,4 +1,7 @@
 import type { DesignVariationInput, DesignVariationResult, GenerateListingInput, ListingPack, GenerateImageInput, GenerateImageResult } from './types';
+import { runWithTrace, recordTokenUsage } from '@/lib/tracing';
+import { publish } from '@/lib/event-bus';
+import { incr, METRIC } from '@/lib/metrics';
 
 const api = import.meta.env.VITE_API_AI_BASE_URL ?? '/api/ai';
 
@@ -19,6 +22,8 @@ function toFormData(obj: Record<string, any>) {
 }
 
 export async function generateListingPack(input: GenerateListingInput): Promise<ListingPack> {
+  publish('generation.requested', { kind: 'listing-pack' });
+  incr(METRIC.ASSISTANT_RUN);
   if (api) {
     const fd = toFormData({
       languages: input.languages,
@@ -64,6 +69,8 @@ export async function generateListingPack(input: GenerateListingInput): Promise<
 }
 
 export async function generateDesignVariations(input: DesignVariationInput): Promise<DesignVariationResult> {
+  publish('generation.requested', { kind: 'design-variations' });
+  incr(METRIC.ASSISTANT_RUN);
   if (api) {
     const fd = toFormData({ baseImage: input.baseImage, prompt: input.prompt });
     const res = await fetch(`${api}/design-variations`, { method: 'POST', body: fd });
@@ -93,28 +100,67 @@ export async function generateDesignVariations(input: DesignVariationInput): Pro
 export type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string };
 
 export async function chat(messages: ChatMessage[], model?: string): Promise<string> {
-  const url = `${api}/chat`;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ messages, model }),
-  });
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`AI chat error (${res.status}): ${text.slice(0, 240)}`);
-  }
-  const ct = res.headers.get('content-type') || '';
-  if (!ct.includes('application/json')) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`AI chat non-JSON response: ${text.slice(0, 240)}`);
-  }
-  const json = await res.json();
-  return String(json.reply ?? '');
+  return runWithTrace(async () => {
+    publish('assistant.interaction', { mode: 'batch' });
+    incr(METRIC.ASSISTANT_RUN);
+    const url = `${api}/chat`;
+    const inputTokensApprox = messages.reduce((n, m) => n + Math.ceil(m.content.length / 4), 0);
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ messages, model }),
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`AI chat error (${res.status}): ${text.slice(0, 240)}`);
+    }
+    const ct = res.headers.get('content-type') || '';
+    if (!ct.includes('application/json')) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`AI chat non-JSON response: ${text.slice(0, 240)}`);
+    }
+    const json = await res.json();
+    const reply: string = String(json.reply ?? '');
+    const outputTokensApprox = Math.ceil(reply.length / 4);
+    recordTokenUsage(inputTokensApprox, outputTokensApprox, 'assistant.chat');
+    return reply;
+  }, { span: 'assistant.chat', metaStart: { turns: messages.length } });
 }
 
 // Generic text generation via the /api/ai/generate endpoint.
 // Accepts a single prompt (caller can concatenate prior context) and optional model/system.
 export async function generate(prompt: string, opts?: { model?: string; system?: string }): Promise<string> {
+  return runWithTrace(async () => {
+    publish('generation.requested', { kind: 'text-generate' });
+    incr(METRIC.ASSISTANT_RUN);
+    const url = `${api}/generate`;
+    const inputTokensApprox = Math.ceil(prompt.length / 4);
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ prompt, model: opts?.model, system: opts?.system }),
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`AI generate error (${res.status}): ${text.slice(0, 240)}`);
+    }
+    const ct = res.headers.get('content-type') || '';
+    if (!ct.includes('application/json')) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`AI generate non-JSON response: ${text.slice(0, 240)}`);
+    }
+    const json = await res.json();
+    const reply: string = String(json.reply ?? json.text ?? '');
+    const outputTokensApprox = Math.ceil(reply.length / 4);
+    recordTokenUsage(inputTokensApprox, outputTokensApprox, 'assistant.generate');
+    return reply;
+  }, { span: 'assistant.generate', metaStart: { hasSystem: !!opts?.system, model: opts?.model } });
+}
+
+// Raw variant returning metadata (used by AssistantWidget to detect fallback mode)
+export async function generateRaw(prompt: string, opts?: { model?: string; system?: string }): Promise<{ reply: string; fallback?: boolean }> {
+  publish('generation.requested', { kind: 'text-generate' });
+  incr(METRIC.ASSISTANT_RUN);
   const url = `${api}/generate`;
   const res = await fetch(url, {
     method: 'POST',
@@ -131,10 +177,12 @@ export async function generate(prompt: string, opts?: { model?: string; system?:
     throw new Error(`AI generate non-JSON response: ${text.slice(0, 240)}`);
   }
   const json = await res.json();
-  return String(json.reply ?? json.text ?? '');
+  return { reply: String(json.reply ?? json.text ?? ''), fallback: json.fallback };
 }
 
 export async function generateImage(input: GenerateImageInput): Promise<GenerateImageResult> {
+  publish('generation.requested', { kind: 'image-generate' });
+  incr(METRIC.ASSISTANT_RUN);
   const url = `${api}/image`;
   const res = await fetch(url, {
     method: 'POST',
@@ -167,6 +215,8 @@ export type Caption = {
 };
 
 export async function captionImages(input: { files?: File[]; urls?: string[] }): Promise<{ captions: Caption[]; note?: string }> {
+  publish('generation.requested', { kind: 'caption' });
+  incr(METRIC.ASSISTANT_RUN);
   const url = `${api}/caption`;
   const hasFiles = !!(input.files && input.files.length > 0);
   if (hasFiles) {

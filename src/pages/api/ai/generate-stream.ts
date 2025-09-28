@@ -1,10 +1,16 @@
 import type { APIRoute } from 'astro';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { publish } from '@/lib/event-bus';
+import { incr, METRIC } from '@/lib/metrics';
+import { fallbackGenerate } from '@/services/assistant/fallback';
 
 export const prerender = false;
 
 export const POST: APIRoute = async ({ request }) => {
   try {
+    publish('generation.requested', { kind: 'assistant-stream' });
+    incr(METRIC.ASSISTANT_RUN);
+    const startMs = Date.now();
     const { prompt } = await request.json();
     if (!prompt || typeof prompt !== 'string') {
       return new Response('Invalid prompt', { status: 400 });
@@ -33,17 +39,21 @@ Keep responses practical, encouraging, and relevant to the artisan community.
     const encoder = new TextEncoder();
 
     if (!apiKey) {
-      // Fallback stub response when API key not configured
-      const fallbackReply = `Hi! I'm the DOTS Assistant. I can help you with creating better product listings, suggesting prices, finding the right tags, and improving your product photography. What would you like help with?`;
+      // Dynamic heuristic fallback streamed token by token
+      const fallbackReply = fallbackGenerate(prompt);
       const stream = new ReadableStream<Uint8Array>({
         start(controller) {
           async function push() {
-            const tokens = fallbackReply.split(' ');
+            const tokens = fallbackReply.split(/(\s+)/); // keep spaces
             for (const token of tokens) {
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ token: token + ' ' })}\n\n`));
-              await sleep(50 + Math.random() * 100);
+              if (!token) continue;
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ token })}\n\n`));
+              await sleep(30 + Math.random() * 60);
             }
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true })}\n\n`));
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true, fallback: true })}\n\n`));
+            const elapsed = Date.now() - startMs;
+            incr(METRIC.ASSISTANT_STREAM_LAT_TOTAL_MS, elapsed);
+            incr(METRIC.ASSISTANT_STREAM_LAT_SAMPLES);
             controller.close();
           }
           void push();
@@ -84,6 +94,9 @@ Keep responses practical, encouraging, and relevant to the artisan community.
             }
 
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true })}\n\n`));
+            const elapsed = Date.now() - startMs;
+            incr(METRIC.ASSISTANT_STREAM_LAT_TOTAL_MS, elapsed);
+            incr(METRIC.ASSISTANT_STREAM_LAT_SAMPLES);
             controller.close();
           } catch (error) {
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: 'Sorry, I encountered an error. Please try again.' })}\n\n`));

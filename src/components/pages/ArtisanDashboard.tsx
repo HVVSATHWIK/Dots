@@ -11,6 +11,7 @@ import { doc, getDoc, collection, query, where, getDocs, orderBy, limit } from '
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import ArtisanTutorial from '@/components/ui/ArtisanTutorial';
+import Icon from '@/components/ui/icons';
 
 export default function ArtisanDashboard() {
   const { user } = useMember();
@@ -21,6 +22,7 @@ export default function ArtisanDashboard() {
   const [profileComplete, setProfileComplete] = useState<boolean | null>(null);
   const [showTutorial, setShowTutorial] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [firestoreIndexError, setFirestoreIndexError] = useState<{ message: string; url?: string } | null>(null);
 
   useEffect(() => {
     const loadArtisanData = async () => {
@@ -45,26 +47,60 @@ export default function ArtisanDashboard() {
 
         // Load recent sales/orders
         const ordersRef = collection(db, 'orders');
-        const q = query(
-          ordersRef,
-          where('sellerId', '==', user.uid),
-          orderBy('createdAt', 'desc'),
-          limit(5)
-        );
-        const ordersSnap = await getDocs(q);
-        const orders = ordersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        let orders: any[] = [];
+        try {
+          const q = query(
+            ordersRef,
+            where('sellerId', '==', user.uid),
+            orderBy('createdAt', 'desc'),
+            limit(5)
+          );
+          const ordersSnap = await getDocs(q);
+          orders = ordersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        } catch (err: any) {
+          if (err?.code === 'failed-precondition' && /index/i.test(err?.message || '')) {
+            const match = (err.message || '').match(/https:\/\/console\.firebase\.google\.com\/[^\s)]+/);
+            setFirestoreIndexError({
+              message: 'Some dashboard queries require a Firestore composite index. Click below to create it.',
+              url: match?.[0]
+            });
+            const qNoOrder = query(ordersRef, where('sellerId', '==', user.uid), limit(5));
+            const ordersSnap = await getDocs(qNoOrder);
+            orders = ordersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          } else {
+            throw err;
+          }
+        }
         setSalesData(orders);
 
         // Load products
         const productsRef = collection(db, 'products');
-        const productsQuery = query(
-          productsRef,
-          where('sellerId', '==', user.uid),
-          orderBy('createdAt', 'desc'),
-          limit(6)
-        );
-        const productsSnap = await getDocs(productsQuery);
-        const productsData = productsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        let productsData: any[] = [];
+        try {
+          const productsQuery = query(
+            productsRef,
+            where('sellerId', '==', user.uid),
+            orderBy('createdAt', 'desc'),
+            limit(6)
+          );
+          const productsSnap = await getDocs(productsQuery);
+          productsData = productsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        } catch (err: any) {
+          if (err?.code === 'failed-precondition' && /index/i.test(err?.message || '')) {
+            if (!firestoreIndexError?.url) {
+              const match = (err.message || '').match(/https:\/\/console\.firebase\.google\.com\/[^\s)]+/);
+              setFirestoreIndexError({
+                message: 'Some dashboard queries require a Firestore composite index. Click below to create it.',
+                url: match?.[0]
+              });
+            }
+            const productsNoOrder = query(productsRef, where('sellerId', '==', user.uid), limit(6));
+            const productsSnap = await getDocs(productsNoOrder);
+            productsData = productsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          } else {
+            throw err;
+          }
+        }
         setProducts(productsData);
 
         // Calculate analytics
@@ -189,6 +225,24 @@ export default function ArtisanDashboard() {
           <Badge className="mt-2 bg-purple-100 text-purple-800">{t('role.artisan')}</Badge>
         </motion.div>
 
+        {firestoreIndexError && (
+          <div className="mb-8 p-4 border border-yellow-200 bg-yellow-50 rounded">
+            <p className="font-paragraph text-sm text-yellow-900">
+              {firestoreIndexError.message}
+            </p>
+            {firestoreIndexError.url && (
+              <a
+                href={firestoreIndexError.url}
+                target="_blank"
+                rel="noreferrer"
+                className="font-heading text-sm text-yellow-900 underline mt-2 inline-block"
+              >
+                Create index in Firebase Console
+              </a>
+            )}
+          </div>
+        )}
+
         {/* Stats Cards */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -236,8 +290,9 @@ export default function ArtisanDashboard() {
                 <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
                   <Palette className="w-10 h-10 text-purple-600" />
                 </div>
-                <h2 className="font-heading text-2xl font-bold text-primary mb-4">
-                  Welcome to Your Artisan Journey! ✨
+                <h2 className="font-heading text-2xl font-bold text-primary mb-4 flex items-center gap-2">
+                  Welcome to Your Artisan Journey!
+                  <Icon name="sparkles" size={24} className="text-purple-600" />
                 </h2>
                 <p className="font-paragraph text-primary/70 mb-6 max-w-2xl mx-auto">
                   Ready to share your beautiful crafts with the world? Our AI-powered tools will help you create compelling product listings, optimize pricing, and grow your artisan business.
@@ -245,21 +300,21 @@ export default function ArtisanDashboard() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                   <div className="bg-white p-4 rounded-lg shadow-sm">
                     <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <span className="text-2xl">🤖</span>
+                      <Icon name="robot" size={28} className="text-blue-600" />
                     </div>
                     <h3 className="font-heading font-bold text-sm text-primary mb-2">AI Assistant</h3>
                     <p className="font-paragraph text-xs text-primary/60">Generate descriptions, titles, and pricing with AI</p>
                   </div>
                   <div className="bg-white p-4 rounded-lg shadow-sm">
                     <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <span className="text-2xl">📊</span>
+                      <Icon name="barchart" size={28} className="text-green-600" />
                     </div>
                     <h3 className="font-heading font-bold text-sm text-primary mb-2">Smart Analytics</h3>
                     <p className="font-paragraph text-xs text-primary/60">Track sales, optimize pricing, grow your business</p>
                   </div>
                   <div className="bg-white p-4 rounded-lg shadow-sm">
                     <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <span className="text-2xl">🔒</span>
+                      <Icon name="lock" size={28} className="text-orange-600" />
                     </div>
                     <h3 className="font-heading font-bold text-sm text-primary mb-2">Authenticity Verified</h3>
                     <p className="font-paragraph text-xs text-primary/60">Mint certificates to prove authenticity</p>

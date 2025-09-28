@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, ArrowRight, Star, Heart, ShoppingCart, UserPlus, Store } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ArrowRight, Star, Heart, ShoppingCart, UserPlus, Store, Sparkles, Box } from 'lucide-react';
+import Icon from '@/components/ui/icons';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -40,20 +41,20 @@ export default function HomePage() {
 
   // Categories data
   const categories = [
-    { name: "Wedding", icon: "💍", href: "/themes/wedding" },
-    { name: "Haldi", icon: "🌼", href: "/discover?category=haldi" },
-    { name: "Shell Art", icon: "🐚", href: "/discover?category=shell-art" },
-    { name: "Paintings", icon: "🎨", href: "/discover?category=paintings" },
-    { name: "Wooden Dolls", icon: "🪆", href: "/discover?category=wooden-dolls" },
-    { name: "Pottery", icon: "🏺", href: "/discover?category=pottery" },
-    { name: "Ceramics", icon: "🫖", href: "/discover?category=ceramics" },
-    { name: "Metal Craft", icon: "⚒️", href: "/discover?category=metal-craft" },
-    { name: "Jewelry", icon: "💎", href: "/discover?category=jewelry" },
-    { name: "Fridge Magnets", icon: "🧲", href: "/discover?category=magnets" },
-    { name: "Showpieces", icon: "🏛️", href: "/discover?category=showpieces" },
-    { name: "Vintage", icon: "📿", href: "/discover?category=vintage" },
-    { name: "Become a Seller", icon: "🏪", href: "/sell" },
-    { name: "Embroidery", icon: "🧵", href: "/discover?category=embroidery" }
+    { name: 'Wedding', icon: <Icon name="target" size={20} className="text-primary" />, href: '/themes/wedding' },
+    { name: 'Haldi', icon: <Icon name="palette" size={20} className="text-primary" />, href: '/discover?category=haldi' },
+    { name: 'Shell Art', icon: <Icon name="shell" size={20} className="text-primary" />, href: '/discover?category=shell-art' },
+    { name: 'Paintings', icon: <Icon name="palette" size={20} className="text-primary" />, href: '/discover?category=paintings' },
+    { name: 'Wooden Dolls', icon: <Icon name="doll" size={20} className="text-primary" />, href: '/discover?category=wooden-dolls' },
+    { name: 'Pottery', icon: <Icon name="vase" size={20} className="text-primary" />, href: '/discover?category=pottery' },
+    { name: 'Ceramics', icon: <Icon name="teapot" size={20} className="text-primary" />, href: '/discover?category=ceramics' },
+    { name: 'Metal Craft', icon: <Icon name="hammer" size={20} className="text-primary" />, href: '/discover?category=metal-craft' },
+    { name: 'Jewelry', icon: <Icon name="gem" size={20} className="text-primary" />, href: '/discover?category=jewelry' },
+    { name: 'Fridge Magnets', icon: <Icon name="magnet" size={20} className="text-primary" />, href: '/discover?category=magnets' },
+    { name: 'Showpieces', icon: <Icon name="building" size={20} className="text-primary" />, href: '/discover?category=showpieces' },
+    { name: 'Vintage', icon: <Icon name="beads" size={20} className="text-primary" />, href: '/discover?category=vintage' },
+    { name: 'Become a Seller', icon: <Icon name="building" size={20} className="text-primary" />, href: '/sell' },
+    { name: 'Embroidery', icon: <Icon name="thread" size={20} className="text-primary" />, href: '/discover?category=embroidery' }
   ];
 
   // Featured products
@@ -126,6 +127,33 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen">
+      {/* Value Prop Banner */}
+      <section className="border-b border-border/50 bg-background/60">
+        <div className="max-w-[120rem] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+            <div className="md:col-span-2">
+              <h1 className="font-heading text-3xl md:text-4xl font-bold text-primary mb-2">
+                AI-powered marketplace for handcrafted designs
+              </h1>
+              <p className="font-paragraph text-primary/70">
+                Discover authentic Indian crafts, personalize with AI, and preview in 3D. Collaborate with artisans and bring your ideas to life.
+              </p>
+            </div>
+            <div className="flex md:justify-end gap-3">
+              <Button asChild className="font-heading bg-neonaccent text-primary hover:bg-neonaccent/90">
+                <Link to="/discover">
+                  <Sparkles className="w-4 h-4 mr-2" /> Explore Crafts
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="font-heading">
+                <Link to="/custom-requests">
+                  <Box className="w-4 h-4 mr-2" /> Try AI Preview
+                </Link>
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      </section>
       {/* Hero Carousel */}
       <section className="relative h-[70vh] overflow-hidden">
         {heroSlides.map((slide, index) => (
@@ -238,6 +266,42 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* How It Works */}
+      <section className="bg-muted/30 border-y border-border/50">
+        <div className="max-w-[120rem] mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <h2 className="font-heading text-2xl md:text-3xl font-bold text-primary mb-6">How it works</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card className="hover-lift">
+              <CardContent className="p-6">
+                <div className="w-10 h-10 rounded-full bg-neonaccent/15 text-neonaccent flex items-center justify-center mb-3">
+                  1
+                </div>
+                <h3 className="font-heading font-semibold text-primary mb-1">Explore authentic crafts</h3>
+                <p className="font-paragraph text-sm text-primary/70">Browse curated collections and discover unique handmade works from artisans.</p>
+              </CardContent>
+            </Card>
+            <Card className="hover-lift">
+              <CardContent className="p-6">
+                <div className="w-10 h-10 rounded-full bg-neonaccent/15 text-neonaccent flex items-center justify-center mb-3">
+                  2
+                </div>
+                <h3 className="font-heading font-semibold text-primary mb-1">Personalize with AI</h3>
+                <p className="font-paragraph text-sm text-primary/70">Get smart recommendations and generate design variations to fit your vision.</p>
+              </CardContent>
+            </Card>
+            <Card className="hover-lift">
+              <CardContent className="p-6">
+                <div className="w-10 h-10 rounded-full bg-neonaccent/15 text-neonaccent flex items-center justify-center mb-3">
+                  3
+                </div>
+                <h3 className="font-heading font-semibold text-primary mb-1">Preview in 3D & order</h3>
+                <p className="font-paragraph text-sm text-primary/70">Collaborate with artisans, visualize in 3D, and place your order confidently.</p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
       {/* Value Proposition Section - Only show to non-authenticated users */}
       {!isAuthenticated && (
         <section className="py-16 bg-primary text-primary-foreground">
@@ -259,7 +323,7 @@ export default function HomePage() {
                 className="text-center"
               >
                 <div className="w-16 h-16 bg-neonaccent rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-primary font-heading font-bold text-2xl">🎨</span>
+                  <Icon name="palette" size={32} className="text-primary" />
                 </div>
                 <h3 className="font-heading font-bold text-xl mb-3">Authentic Craftsmanship</h3>
                 <p className="font-paragraph text-primary-foreground/80">
@@ -274,7 +338,7 @@ export default function HomePage() {
                 className="text-center"
               >
                 <div className="w-16 h-16 bg-neonaccent rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-primary font-heading font-bold text-2xl">🤝</span>
+                  <Icon name="target" size={32} className="text-primary" />
                 </div>
                 <h3 className="font-heading font-bold text-xl mb-3">Direct from Artisans</h3>
                 <p className="font-paragraph text-primary-foreground/80">
@@ -289,7 +353,7 @@ export default function HomePage() {
                 className="text-center"
               >
                 <div className="w-16 h-16 bg-neonaccent rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-primary font-heading font-bold text-2xl">🌍</span>
+                  <Icon name="building" size={32} className="text-primary" />
                 </div>
                 <h3 className="font-heading font-bold text-xl mb-3">Global Reach</h3>
                 <p className="font-paragraph text-primary-foreground/80">

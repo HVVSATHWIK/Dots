@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { motion, AnimatePresence } from 'framer-motion';
+import Icon from '@/components/ui/icons';
 import { useTranslation } from 'react-i18next';
 
 interface ArtisanTutorialProps {
@@ -16,35 +17,35 @@ const ArtisanTutorial: React.FC<ArtisanTutorialProps> = ({ isOpen, onClose, onCo
   const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(0);
 
-  const tutorialSteps = [
+  const tutorialSteps: { title: string; description: string; icon: React.ReactNode; action: string | null }[] = [
     {
       title: t('tutorial.artisan.step1.title', 'Welcome to DOTS, Artisan!'),
       description: t('tutorial.artisan.step1.description', 'Showcase your craftsmanship to buyers worldwide. Let\'s set up your artisan profile and start selling your creations.'),
-      icon: '🎨',
+      icon: <Icon name="palette" size={28} className="text-purple-600" />,
       action: null
     },
     {
       title: t('tutorial.artisan.step2.title', 'Complete Your Profile'),
       description: t('tutorial.artisan.step2.description', 'Add your story, expertise, and beautiful photos of your work. A complete profile attracts more buyers.'),
-      icon: '👤',
+      icon: <Icon name="user" size={28} className="text-purple-600" />,
       action: '/profile'
     },
     {
       title: t('tutorial.artisan.step3.title', 'Add Your Products'),
       description: t('tutorial.artisan.step3.description', 'Upload high-quality photos of your handmade items. Include detailed descriptions and pricing.'),
-      icon: '📦',
+      icon: <Icon name="package" size={28} className="text-purple-600" />,
       action: '/products'
     },
     {
       title: t('tutorial.artisan.step4.title', 'Manage Your Orders'),
       description: t('tutorial.artisan.step4.description', 'Track incoming orders, communicate with buyers, and ensure timely delivery of your beautiful creations.'),
-      icon: '📋',
+      icon: <Icon name="clipboard" size={28} className="text-purple-600" />,
       action: '/orders'
     },
     {
       title: t('tutorial.artisan.step5.title', 'Grow Your Business'),
       description: t('tutorial.artisan.step5.description', 'Use analytics to understand what sells, respond to custom requests, and build lasting relationships with buyers.'),
-      icon: '📈',
+      icon: <Icon name="trending" size={28} className="text-purple-600" />,
       action: '/analytics'
     }
   ];

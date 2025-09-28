@@ -1,25 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { getDb } from '@/integrations/members/firebase';
-import { collection, getDocs, orderBy, query, where } from 'firebase/firestore';
+import { listOrdersForBuyer } from '@/lib/firestore-repo';
 import { useMember } from '@/integrations';
 
-export interface OrderItem {
-  name: string;
-  artist?: string;
-  image?: string;
-  price: number;
-  quantity: number;
-}
-
-export interface Order {
-  id: string;
-  date: number;
-  status: string;
-  total: number;
-  buyerId: string;
-  sellerId?: string;
-  items: OrderItem[];
-}
+import type { Order } from '@/entities/schemas';
 
 interface UseOrdersResult {
   orders: Order[];
@@ -38,10 +21,8 @@ export function useOrders(): UseOrdersResult {
     if (!user?.uid) return;
     setLoading(true); setError(null);
     try {
-      const db = getDb();
-      const qBuyer = query(collection(db, 'orders'), where('buyerId', '==', user.uid), orderBy('date', 'desc'));
-      const snap = await getDocs(qBuyer);
-      setOrders(snap.docs.map(d => ({ id: d.id, ...(d.data() as any) })) as Order[]);
+      const data = await listOrdersForBuyer(user.uid);
+      setOrders(data);
     } catch (e: any) {
       setError(e?.message || 'Failed to load orders');
     } finally {

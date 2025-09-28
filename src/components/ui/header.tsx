@@ -39,6 +39,7 @@ export function Header() {
     { name: t('nav.themes'), href: '/themes', current: location.pathname === '/themes' },
     { name: t('nav.community'), href: '/community', current: location.pathname === '/community' },
     { name: t('nav.about'), href: '/about', current: location.pathname === '/about' },
+    { name: t('nav.aihub'), href: '/ai-hub', current: location.pathname === '/ai-hub' },
   ];
 
   const handleLogout = async () => {
@@ -162,13 +163,13 @@ export function Header() {
               <>
                 {/* Non-authenticated Actions */}
                 <Button asChild variant="ghost" className="font-heading">
-                  <Link to="/login">{t('nav.login')}</Link>
+                  <Link to={`/login?next=${encodeURIComponent(location.pathname + location.search)}`}>{t('nav.login')}</Link>
                 </Button>
                 <Button 
                   asChild 
                   className="btn-secondary font-heading font-bold hover-lift"
                 >
-                  <Link to="/signup">{t('nav.signup')}</Link>
+                  <Link to={`/signup?next=${encodeURIComponent(location.pathname + location.search)}`}>{t('nav.signup')}</Link>
                 </Button>
               </>
             )}
@@ -240,14 +241,14 @@ export function Header() {
                 ) : (
                   <>
                     <Link
-                      to="/login"
+                      to={`/login?next=${encodeURIComponent(location.pathname + location.search)}`}
                       className="block px-3 py-2 font-heading text-sm font-medium text-primary/80 hover:text-neonaccent rounded-md"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       {t('nav.login')}
                     </Link>
                     <Link
-                      to="/signup"
+                      to={`/signup?next=${encodeURIComponent(location.pathname + location.search)}`}
                       className="block px-3 py-2 font-heading text-sm font-medium btn-secondary rounded-md hover-lift"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >

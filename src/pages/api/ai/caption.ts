@@ -1,5 +1,7 @@
 import type { APIRoute } from 'astro';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { publish } from '@/lib/event-bus';
+import { incr, METRIC } from '@/lib/metrics';
 
 export const prerender = false;
 
@@ -51,6 +53,8 @@ async function urlToInlineData(url: string): Promise<{ data: string; mimeType: s
 
 export const POST: APIRoute = async ({ request }) => {
   try {
+    publish('generation.requested', { kind: 'caption' });
+    incr(METRIC.ASSISTANT_RUN);
     // Accept multipart/form-data or JSON { urls: string[] }
     const ct = request.headers.get('content-type') || '';
     const apiKey = (import.meta.env.GEMINI_API_KEY as string | undefined) ?? (process.env.GEMINI_API_KEY as string | undefined);

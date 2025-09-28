@@ -1,21 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { getDb } from '@/integrations/members/firebase';
-import { addDoc, collection, deleteDoc, doc, getDocs, orderBy, query, updateDoc, where, type Query } from 'firebase/firestore';
 import { useMember } from '@/integrations';
+import { createListing, deleteListing, listAllListings, listListingsForOwner, updateListing } from '@/lib/firestore-repo';
+import type { Listing } from '@/entities/schemas';
 
-export interface Listing {
-  id: string;
-  title: string;
-  description?: string;
-  price: number;
-  currency?: string;
-  images?: string[];
-  tags?: string[];
-  ownerId: string;
-  createdAt?: number;
-  updatedAt?: number;
-  status?: 'draft' | 'active' | 'archived';
-}
+// Listing type now sourced from central schema file for consistency
 
 interface UseListingsResult {
   listings: Listing[];
@@ -38,15 +26,8 @@ export function useListings(ownerOnly = true): UseListingsResult {
     if (ownerOnly && !user?.uid) return;
     setLoading(true);
     try {
-      const db = getDb();
-  let qRef: Query;
-      if (ownerOnly) {
-        qRef = query(collection(db, 'listings'), where('ownerId', '==', user!.uid), orderBy('createdAt', 'desc'));
-      } else {
-        qRef = query(collection(db, 'listings'), orderBy('createdAt', 'desc'));
-      }
-      const snap = await getDocs(qRef);
-      setListings(snap.docs.map(d => ({ id: d.id, ...(d.data() as any) })) as Listing[]);
+      const data = ownerOnly ? await listListingsForOwner(user!.uid) : await listAllListings();
+      setListings(data);
     } catch (e: any) {
       setError(e?.message || 'Failed to load listings');
     } finally {
@@ -58,30 +39,18 @@ export function useListings(ownerOnly = true): UseListingsResult {
 
   const create = useCallback(async (input: Omit<Listing, 'id' | 'ownerId' | 'createdAt' | 'updatedAt'>) => {
     if (!user?.uid) return null;
-    const db = getDb();
-    const createdAt = Date.now();
-    const updatedAt = createdAt;
-    const ref = await addDoc(collection(db, 'listings'), {
-      ...input,
-      ownerId: user.uid,
-      createdAt,
-      updatedAt,
-      status: input.status || 'draft',
-      currency: input.currency || 'INR'
-    });
-    setListings(prev => [{ id: ref.id, ownerId: user.uid, createdAt, updatedAt, ...input }, ...prev]);
-    return ref.id;
+    const created = await createListing({ ...input, ownerId: user.uid } as any);
+    setListings(prev => [created, ...prev]);
+    return created.id;
   }, [user?.uid]);
 
   const update = useCallback(async (id: string, patch: Partial<Listing>) => {
-    const db = getDb();
-    await updateDoc(doc(db, 'listings', id), { ...patch, updatedAt: Date.now() });
-    setListings(prev => prev.map(l => l.id === id ? { ...l, ...patch } : l));
+    const updated = await updateListing(id, patch);
+    setListings(prev => prev.map(l => l.id === id ? updated : l));
   }, []);
 
   const remove = useCallback(async (id: string) => {
-    const db = getDb();
-    await deleteDoc(doc(db, 'listings', id));
+    await deleteListing(id);
     setListings(prev => prev.filter(l => l.id !== id));
   }, []);
 

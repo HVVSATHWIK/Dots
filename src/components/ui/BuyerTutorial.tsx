@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { motion, AnimatePresence } from 'framer-motion';
+import Icon from '@/components/ui/icons';
 import { useTranslation } from 'react-i18next';
 
 interface BuyerTutorialProps {
@@ -16,35 +17,35 @@ const BuyerTutorial: React.FC<BuyerTutorialProps> = ({ isOpen, onClose, onComple
   const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(0);
 
-  const tutorialSteps = [
+  const tutorialSteps: { title: string; description: string; icon: React.ReactNode; action: string | null }[] = [
     {
       title: t('tutorial.buyer.step1.title', 'Welcome to DOTS!'),
       description: t('tutorial.buyer.step1.description', 'Discover authentic handmade crafts from skilled Indian artisans. Let\'s get you started with your journey.'),
-      icon: '🎨',
+      icon: <Icon name="palette" size={28} className="text-primary" />,
       action: null
     },
     {
       title: t('tutorial.buyer.step2.title', 'Explore Art Categories'),
       description: t('tutorial.buyer.step2.description', 'Browse through different categories like paintings, jewelry, textiles, and more. Each piece tells a unique story.'),
-      icon: '🔍',
+      icon: <Icon name="search" size={28} className="text-primary" />,
       action: '/discover'
     },
     {
       title: t('tutorial.buyer.step3.title', 'Save Your Favorites'),
       description: t('tutorial.buyer.step3.description', 'Create your wishlist by saving items you love. Get notified when similar items are added.'),
-      icon: '❤️',
+      icon: <Icon name="heart" size={28} className="text-red-500" />,
       action: '/wishlist'
     },
     {
       title: t('tutorial.buyer.step4.title', 'Request Custom Art'),
       description: t('tutorial.buyer.step4.description', 'Have a specific vision? Request custom artwork from artisans who can bring your ideas to life.'),
-      icon: '✨',
+      icon: <Icon name="sparkles" size={28} className="text-primary" />,
       action: '/custom-requests'
     },
     {
       title: t('tutorial.buyer.step5.title', 'Complete Your First Purchase'),
       description: t('tutorial.buyer.step5.description', 'Ready to own a piece of Indian heritage? Make your first purchase and support local artisans.'),
-      icon: '🛒',
+      icon: <Icon name="cart" size={28} className="text-primary" />,
       action: '/discover'
     }
   ];

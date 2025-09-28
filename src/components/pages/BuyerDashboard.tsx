@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import { getDb } from '@/integrations/members/firebase';
 import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { motion } from 'framer-motion';
+import Icon from '@/components/ui/icons';
 import { useTranslation } from 'react-i18next';
 import BuyerTutorial from '@/components/ui/BuyerTutorial';
 
@@ -205,8 +206,9 @@ export default function BuyerDashboard() {
                 <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
                   <Package className="w-10 h-10 text-blue-600" />
                 </div>
-                <h2 className="font-heading text-2xl font-bold text-primary mb-4">
-                  Welcome to DOTS Marketplace! 🌟
+                <h2 className="font-heading text-2xl font-bold text-primary mb-4 flex items-center gap-2">
+                  Welcome to DOTS Marketplace!
+                  <Icon name="sparkles" size={24} className="text-blue-600" />
                 </h2>
                 <p className="font-paragraph text-primary/70 mb-6 max-w-2xl mx-auto">
                   Discover authentic handcrafted treasures made by talented artisans across India. Each piece tells a story and supports traditional craftsmen.
@@ -214,21 +216,21 @@ export default function BuyerDashboard() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                   <div className="bg-white p-4 rounded-lg shadow-sm">
                     <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <span className="text-2xl">🎨</span>
+                      <Icon name="palette" size={28} className="text-green-600" />
                     </div>
                     <h3 className="font-heading font-bold text-sm text-primary mb-2">Authentic Crafts</h3>
                     <p className="font-paragraph text-xs text-primary/60">Each product is verified authentic with AI-powered certificates</p>
                   </div>
                   <div className="bg-white p-4 rounded-lg shadow-sm">
                     <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <span className="text-2xl">🤝</span>
+                      <Icon name="target" size={28} className="text-orange-600" />
                     </div>
                     <h3 className="font-heading font-bold text-sm text-primary mb-2">Support Artisans</h3>
                     <p className="font-paragraph text-xs text-primary/60">Buy directly from makers and support traditional crafts</p>
                   </div>
                   <div className="bg-white p-4 rounded-lg shadow-sm">
                     <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <span className="text-2xl">💎</span>
+                      <Icon name="gem" size={28} className="text-purple-600" />
                     </div>
                     <h3 className="font-heading font-bold text-sm text-primary mb-2">Unique Collection</h3>
                     <p className="font-paragraph text-xs text-primary/60">Find one-of-a-kind pieces you won't see anywhere else</p>

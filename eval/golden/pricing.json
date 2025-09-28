@@ -1,0 +1,8 @@
+[
+  {
+    "id": "pricing-baseline-1",
+    "kind": "pricing",
+    "input": { "basePrice": 100, "materialsCost": 40 },
+    "expected": { "minFloor": ">=materialsCost" }
+  }
+]

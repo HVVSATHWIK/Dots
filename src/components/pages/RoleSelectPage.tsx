@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
+import Icon from '@/components/ui/icons';
 
 export default function RoleSelectPage() {
   const navigate = useNavigate();
@@ -61,7 +62,7 @@ export default function RoleSelectPage() {
               <CardContent className="p-8 flex flex-col h-full">
                 <div className="text-center mb-6">
                   <div className="w-20 h-20 bg-neonaccent rounded-full flex items-center justify-center mx-auto mb-4">
-                    <span className="text-4xl">🛍️</span>
+                    <Icon name="shopping-bag" size={48} className="text-primary" />
                   </div>
                   <h2 className="font-heading text-2xl font-bold mb-2">I'm Here to Buy Art</h2>
                   <p className="font-paragraph text-primary/70 leading-relaxed">
@@ -71,19 +72,19 @@ export default function RoleSelectPage() {
 
                 <div className="space-y-3 mb-6">
                   <div className="flex items-center text-sm text-primary/80">
-                    <span className="text-neonaccent mr-2">✓</span>
+                    <Icon name="sparkles" size={16} className="text-neonaccent mr-2" />
                     Browse authentic Indian crafts
                   </div>
                   <div className="flex items-center text-sm text-primary/80">
-                    <span className="text-neonaccent mr-2">✓</span>
+                    <Icon name="search" size={16} className="text-neonaccent mr-2" />
                     AI-powered discovery recommendations
                   </div>
                   <div className="flex items-center text-sm text-primary/80">
-                    <span className="text-neonaccent mr-2">✓</span>
+                    <Icon name="shield" size={16} className="text-neonaccent mr-2" />
                     Secure worldwide shipping
                   </div>
                   <div className="flex items-center text-sm text-primary/80">
-                    <span className="text-neonaccent mr-2">✓</span>
+                    <Icon name="heart" size={16} className="text-neonaccent mr-2" />
                     Direct support for artisans
                   </div>
                 </div>
@@ -109,7 +110,7 @@ export default function RoleSelectPage() {
               <CardContent className="p-8 flex flex-col h-full">
                 <div className="text-center mb-6">
                   <div className="w-20 h-20 bg-neonaccent rounded-full flex items-center justify-center mx-auto mb-4">
-                    <span className="text-4xl">🎨</span>
+                    <Icon name="palette" size={48} className="text-primary" />
                   </div>
                   <h2 className="font-heading text-2xl font-bold mb-2">I'm an Artisan</h2>
                   <p className="font-paragraph text-primary/70 leading-relaxed">
@@ -119,19 +120,19 @@ export default function RoleSelectPage() {
 
                 <div className="space-y-3 mb-6">
                   <div className="flex items-center text-sm text-primary/80">
-                    <span className="text-neonaccent mr-2">✓</span>
+                    <Icon name="sparkles" size={16} className="text-neonaccent mr-2" />
                     AI Copilot for product descriptions
                   </div>
                   <div className="flex items-center text-sm text-primary/80">
-                    <span className="text-neonaccent mr-2">✓</span>
+                    <Icon name="barchart" size={16} className="text-neonaccent mr-2" />
                     Sales analytics and insights
                   </div>
                   <div className="flex items-center text-sm text-primary/80">
-                    <span className="text-neonaccent mr-2">✓</span>
+                    <Icon name="target" size={16} className="text-neonaccent mr-2" />
                     AI-powered pricing optimization
                   </div>
                   <div className="flex items-center text-sm text-primary/80">
-                    <span className="text-neonaccent mr-2">✓</span>
+                    <Icon name="building" size={16} className="text-neonaccent mr-2" />
                     Global marketplace exposure
                   </div>
                 </div>

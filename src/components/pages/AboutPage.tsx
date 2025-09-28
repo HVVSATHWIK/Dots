@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Image } from '@/components/ui/image';
 import { motion } from 'framer-motion';
+import Icon from '@/components/ui/icons';
 import { Link } from 'react-router-dom';
 
 export default function AboutPage() {
@@ -13,26 +14,26 @@ export default function AboutPage() {
     { number: "4.8", label: "Average Rating", icon: Award }
   ];
 
-  const values = [
+  const values: { title: string; description: string; icon: React.ReactNode }[] = [
     {
-      title: "Preserve Heritage",
+      title: 'Preserve Heritage',
       description: "We are committed to preserving India's rich cultural heritage by supporting traditional artisans and their time-honored crafts.",
-      icon: "🏛️"
+      icon: <Icon name="building" size={40} className="text-primary" />
     },
     {
-      title: "Empower Artisans",
-      description: "Our platform provides artisans with direct access to global markets, ensuring fair compensation and sustainable livelihoods.",
-      icon: "💪"
+      title: 'Empower Artisans',
+      description: 'Our platform provides artisans with direct access to global markets, ensuring fair compensation and sustainable livelihoods.',
+      icon: <Icon name="target" size={40} className="text-primary" />
     },
     {
-      title: "Authentic Quality",
-      description: "Every piece on our platform is handcrafted using traditional techniques, ensuring authenticity and exceptional quality.",
-      icon: "✨"
+      title: 'Authentic Quality',
+      description: 'Every piece on our platform is handcrafted using traditional techniques, ensuring authenticity and exceptional quality.',
+      icon: <Icon name="sparkles" size={40} className="text-primary" />
     },
     {
-      title: "Global Connection",
-      description: "We bridge the gap between Indian artisans and art lovers worldwide, creating meaningful connections through craft.",
-      icon: "🌍"
+      title: 'Global Connection',
+      description: 'We bridge the gap between Indian artisans and art lovers worldwide, creating meaningful connections through craft.',
+      icon: <Icon name="building" size={40} className="text-primary" />
     }
   ];
 

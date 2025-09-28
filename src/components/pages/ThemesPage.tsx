@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Image } from '@/components/ui/image';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { motion } from 'framer-motion';
+import Icon from '@/components/ui/icons';
 
 export default function ThemesPage() {
   const [activeTheme, setActiveTheme] = useState('wedding');
@@ -423,7 +424,7 @@ export default function ThemesPage() {
                 transition={{ delay: 0.1 }}
               >
                 <div className="w-16 h-16 bg-neonaccent rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-primary font-heading font-bold text-2xl">🎨</span>
+                  <Icon name="palette" size={40} className="text-primary" />
                 </div>
                 <h3 className="font-heading font-bold text-xl text-primary mb-3">Curated Selection</h3>
                 <p className="font-paragraph text-primary/70">
@@ -437,7 +438,7 @@ export default function ThemesPage() {
                 transition={{ delay: 0.2 }}
               >
                 <div className="w-16 h-16 bg-neonaccent rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-primary font-heading font-bold text-2xl">✨</span>
+                  <Icon name="sparkles" size={40} className="text-primary" />
                 </div>
                 <h3 className="font-heading font-bold text-xl text-primary mb-3">Authentic Craftsmanship</h3>
                 <p className="font-paragraph text-primary/70">
@@ -451,7 +452,7 @@ export default function ThemesPage() {
                 transition={{ delay: 0.3 }}
               >
                 <div className="w-16 h-16 bg-neonaccent rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-primary font-heading font-bold text-2xl">🏠</span>
+                  <Icon name="home" size={40} className="text-primary" />
                 </div>
                 <h3 className="font-heading font-bold text-xl text-primary mb-3">Perfect Harmony</h3>
                 <p className="font-paragraph text-primary/70">

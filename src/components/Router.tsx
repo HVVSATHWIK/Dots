@@ -1,4 +1,4 @@
-﻿import { MemberProvider } from '@/integrations';
+import { MemberProvider } from '@/integrations';
 import { Routes, Route, Navigate, BrowserRouter, useNavigate } from 'react-router-dom';
 import { ScrollToTop } from '@/lib/scroll-to-top';
 import { MemberProtectedRoute } from '@/components/ui/member-protected-route';
@@ -14,6 +14,7 @@ import CommunityPage from '@/components/pages/CommunityPage';
 import AboutPage from '@/components/pages/AboutPage';
 import ContactPage from '@/components/pages/ContactPage';
 import CartPage from '@/components/pages/CartPage';
+import WishlistPage from '@/components/pages/WishlistPage';
 import ProfilePage from '@/components/pages/ProfilePage';
 import SellerPage from '@/components/pages/SellerPage';
 import CopilotPage from '@/components/pages/CopilotPage';
@@ -26,6 +27,7 @@ import ProfileSetupPage from '@/components/pages/ProfileSetupPage';
 import RoleSelectPage from '@/components/pages/RoleSelectPage';
 import AnalyticsPage from '@/components/pages/AnalyticsPage';
 import PricingOptimizerPage from '@/components/pages/PricingOptimizerPage';
+import AIHubPage from '@/components/pages/AIHubPage';
 import { useMember } from '@/integrations';
 import { useEffect } from 'react';
 import '@/i18n/config'; // Initialize i18n
@@ -75,7 +77,8 @@ export default function AppRouter() {
               <Route path='/about' element={<AboutPage />} />
               <Route path='/contact' element={<ContactPage />} />
               <Route path='/cart' element={<CartPage />} />
-              <Route path='/wishlist' element={<CartPage />} />
+              <Route path='/wishlist' element={<WishlistPage />} />
+              <Route path='/ai-hub' element={<AIHubPage />} />
 
               <Route
                 path='/sell'
