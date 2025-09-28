@@ -160,7 +160,6 @@ export async function hybridSearchListings(queryText: string, listings: Listing[
   const semResults = await semanticSearchListings(queryText, listings.length); // get all semantic scores for coverage
   // If semantic layer unavailable (e.g., Firestore disabled), fall back to pure lexical + default trust.
   if (!semResults.length) {
-    const trustMap: Record<string, number> = {};
     const results: HybridSearchResult[] = listings.map(l => {
       const lexical = lexicalScore(queryText, l);
       const trustNorm = 0.5;
