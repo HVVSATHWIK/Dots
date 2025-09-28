@@ -62,6 +62,8 @@ You are the DOTS Assistant.
 		const reply = result.response.text();
 		return new Response(JSON.stringify({ reply }), { status: 200, headers: { 'content-type': 'application/json' } });
 	} catch (e: any) {
-		return new Response(JSON.stringify({ error: e?.message ?? 'error' }), { status: 500 });
+		const msg = e?.message || 'error';
+		const status = /not found|404/i.test(msg) ? 404 : /unauth|denied|permission/i.test(msg) ? 401 : 500;
+		return new Response(JSON.stringify({ error: msg, status }), { status });
 	}
 };

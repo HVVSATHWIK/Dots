@@ -117,7 +117,8 @@ Keep responses practical, encouraging, and relevant to the artisan community.
       }
     });
   } catch (e: any) {
-    return new Response(`Streaming error: ${e?.message || 'unknown'}`, { status: 500 });
+    const msg = e?.message || 'unknown';
+    return new Response(`data: ${JSON.stringify({ error: msg })}\n\n`, { status: 500, headers: { 'Content-Type': 'text/event-stream' } });
   }
 };
 
