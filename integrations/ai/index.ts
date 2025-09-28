@@ -158,7 +158,7 @@ export async function generate(prompt: string, opts?: { model?: string; system?:
 }
 
 // Raw variant returning metadata (used by AssistantWidget to detect fallback mode)
-export async function generateRaw(prompt: string, opts?: { model?: string; system?: string }): Promise<{ reply: string; fallback?: boolean }> {
+export async function generateRaw(prompt: string, opts?: { model?: string; system?: string }): Promise<{ reply: string; fallback?: boolean; model?: string; attempts?: any[] }> {
   publish('generation.requested', { kind: 'text-generate' });
   incr(METRIC.ASSISTANT_RUN);
   const url = `${api}/generate`;
@@ -176,7 +176,7 @@ export async function generateRaw(prompt: string, opts?: { model?: string; syste
       const text = JSON.stringify(json).slice(0, 240);
       throw new Error(`AI generate error (${res.status}): ${text}`);
     }
-    return { reply, fallback: !!json.fallback };
+    return { reply, fallback: !!json.fallback, model: json.model, attempts: json.attempts };
   }
   // Non-JSON failure path
   if (!res.ok) {

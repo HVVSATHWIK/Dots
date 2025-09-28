@@ -1,5 +1,11 @@
 import type { APIRoute } from 'astro';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { selectModels, recordModelSuccess } from '@/lib/ai-model-router';
+
+function normalizeModelName(name: string | undefined): string | undefined {
+	if (!name) return name;
+	return name.startsWith('models/') ? name.slice('models/'.length) : name;
+}
 import { publish } from '@/lib/event-bus';
 import { incr, METRIC } from '@/lib/metrics';
 import { classifyFallbackIntent } from '@/services/assistant/fallback';
@@ -41,29 +47,40 @@ You are the DOTS Assistant.
 		}
 
 		const genAI = new GoogleGenerativeAI(apiKey);
-		const modelName =
-			(model as string)
-			|| (import.meta.env.GEMINI_MODEL as string | undefined)
-			|| (process.env.GEMINI_MODEL as string | undefined)
-			|| 'gemini-1.5-flash';
-		const m = genAI.getGenerativeModel({ model: modelName });
-
-		// Build prompt parts with our system prompt and the conversation
-		const parts: any[] = [];
-		parts.push({ text: systemPrompt });
-		for (const msg of effectiveMessages) {
-			if (msg.role === 'user' || msg.role === 'assistant') {
-				parts.push({ text: `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}` });
+		const { candidates, override, cached } = selectModels('chat', { forceModel: model });
+		const attempts: { model: string; ok: boolean; error?: string }[] = [];
+		let lastErr: any;
+		for (const candidate of candidates) {
+			try {
+				// Build prompt parts with system + conversation each attempt (cheap)
+				const parts: any[] = [];
+				parts.push({ text: systemPrompt });
+				for (const msg of effectiveMessages) {
+					if (msg.role === 'user' || msg.role === 'assistant') {
+						parts.push({ text: `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}` });
+					}
+				}
+				parts.push({ text: 'Assistant:' });
+				const m = genAI.getGenerativeModel({ model: normalizeModelName(candidate)! });
+				const result = await m.generateContent({ contents: [{ role: 'user', parts }] });
+				const reply = result.response.text();
+				attempts.push({ model: candidate, ok: true });
+				recordModelSuccess('chat', candidate);
+				return new Response(JSON.stringify({ reply, model: candidate, attempts, override: !!override, cached }), { status: 200, headers: { 'content-type': 'application/json' } });
+			} catch (err: any) {
+				const msg = err?.message || String(err);
+				attempts.push({ model: candidate, ok: false, error: msg.slice(0, 240) });
+				lastErr = err;
+				if (/unauth|denied|permission/i.test(msg)) break; // stop early if permission issue
+				continue;
 			}
 		}
-		parts.push({ text: 'Assistant:' });
-
-		const result = await m.generateContent({ contents: [{ role: 'user', parts }] });
-		const reply = result.response.text();
-		return new Response(JSON.stringify({ reply }), { status: 200, headers: { 'content-type': 'application/json' } });
+		// All attempts failed -> fallback classification (contextual intent aware reply)
+		const { reply, intent } = classifyFallbackIntent(effectiveMessages);
+		return new Response(JSON.stringify({ reply, intent, fallback: true, attempts, error: lastErr?.message || 'model-failed', override: !!override, cached }), { status: 200, headers: { 'content-type': 'application/json' } });
 	} catch (e: any) {
 		const msg = e?.message || 'error';
-		const status = /not found|404/i.test(msg) ? 404 : /unauth|denied|permission/i.test(msg) ? 401 : 500;
-		return new Response(JSON.stringify({ error: msg, status }), { status });
+		const fallback = classifyFallbackIntent([{ role: 'user', content: 'help' }]).reply; // minimal safe fallback
+		return new Response(JSON.stringify({ error: msg, status: 500, fallback: true, reply: fallback }), { status: 200, headers: { 'content-type': 'application/json' } });
 	}
 };

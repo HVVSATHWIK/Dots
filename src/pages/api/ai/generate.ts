@@ -1,5 +1,11 @@
 import type { APIRoute } from 'astro';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { selectModels, recordModelSuccess } from '@/lib/ai-model-router';
+
+function normalizeModelName(name: string | undefined): string | undefined {
+  if (!name) return name;
+  return name.startsWith('models/') ? name.slice('models/'.length) : name;
+}
 import { publish } from '@/lib/event-bus';
 import { incr, METRIC } from '@/lib/metrics';
 import { fallbackGenerate } from '@/services/assistant/fallback';
@@ -25,30 +31,41 @@ export const POST: APIRoute = async ({ request }) => {
       return new Response(JSON.stringify({ reply, fallback: true }), { status: 200, headers: { 'content-type': 'application/json' } });
     }
     const genAI = new GoogleGenerativeAI(apiKey);
-    const modelName = model || (import.meta.env.GEMINI_MODEL as string | undefined) || (process.env.GEMINI_MODEL as string | undefined) || 'gemini-1.5-flash';
-    const m = genAI.getGenerativeModel({ model: modelName });
+    const providedRaw = model || (import.meta.env.GEMINI_MODEL as string | undefined) || (process.env.GEMINI_MODEL as string | undefined);
+    const provided = normalizeModelName(providedRaw);
+    // Updated list aligned with your /api/ai/models output (preferring 2.5 flash tiers, then 2.0, then legacy fallbacks)
+    const { candidates, override, cached } = selectModels('generate', { forceModel: model });
     const baseSystem = system || 'You are a helpful assistant.';
-    const result = await m.generateContent({
-      contents: [
-        { role: 'user', parts: [{ text: `${baseSystem}\nUser: ${prompt}\nAssistant:` }] },
-      ],
-    });
-    const reply = result.response.text();
-    return new Response(JSON.stringify({ reply }), { status: 200, headers: { 'content-type': 'application/json' } });
-  } catch (e: any) {
-    const msg = e?.message || 'error';
-    const status = /not found|model.*not|404/i.test(msg) ? 404 : /unauth|denied|permission/i.test(msg) ? 401 : 500;
-    // If the failure looks like a model or permission issue, provide heuristic fallback instead of hard failing.
-    if (status === 404 || status === 401) {
+    const attempts: { model: string; ok: boolean; error?: string }[] = [];
+    let lastErr: any;
+    for (const candidate of candidates) {
       try {
-        const fallback = fallbackGenerate(typeof e?.prompt === 'string' ? e.prompt : (typeof e?.input === 'string' ? e.input : ''));
-        console.warn('[ai/generate] model error -> heuristic fallback', { message: msg, status });
-        return new Response(JSON.stringify({ error: msg, status, fallback: true, reply: fallback, reason: 'model_error' }), { status });
-      } catch {
-        // continue to return original error
+  const m = genAI.getGenerativeModel({ model: normalizeModelName(candidate)! });
+        const result = await m.generateContent({
+          contents: [
+            { role: 'user', parts: [{ text: `${baseSystem}\nUser: ${prompt}\nAssistant:` }] },
+          ],
+        });
+        const reply = result.response.text();
+        attempts.push({ model: candidate, ok: true });
+        recordModelSuccess('generate', candidate);
+        return new Response(JSON.stringify({ reply, model: candidate, attempts }), { status: 200, headers: { 'content-type': 'application/json' } });
+      } catch (err: any) {
+        const msg = err?.message || String(err);
+        attempts.push({ model: candidate, ok: false, error: msg.slice(0, 240) });
+        lastErr = err;
+        // If permission/unauthorized, no point in trying alternates
+        if (/unauth|denied|permission/i.test(msg)) break;
+        continue;
       }
     }
+    // All attempts failed -> heuristic fallback
+    const reply = fallbackGenerate(prompt);
+    return new Response(JSON.stringify({ reply, fallback: true, attempts, error: lastErr?.message || 'model-failed', override: !!override, cached }), { status: 200, headers: { 'content-type': 'application/json' } });
+  } catch (e: any) {
+    const msg = e?.message || 'error';
     console.error('[ai/generate] unhandled error', msg);
-    return new Response(JSON.stringify({ error: msg, status }), { status, headers: { 'content-type': 'application/json' } });
+    const fallback = fallbackGenerate('');
+    return new Response(JSON.stringify({ error: msg, status: 500, fallback: true, reply: fallback }), { status: 200, headers: { 'content-type': 'application/json' } });
   }
 };

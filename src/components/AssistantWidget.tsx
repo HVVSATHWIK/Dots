@@ -25,6 +25,7 @@ export default function AssistantWidget() {
   const [mode, setMode] = React.useState<AssistantMode>(AssistantMode.General);
   const streamingEnabled = isFlagEnabled('assistantStreaming');
   const [isFallback, setIsFallback] = React.useState(false);
+  const [activeModel, setActiveModel] = React.useState<string | null>(null);
   const [showFallbackInfo, setShowFallbackInfo] = React.useState(false);
   const endRef = React.useRef<HTMLDivElement | null>(null);
 
@@ -134,8 +135,13 @@ export default function AssistantWidget() {
       }
       if (!streamed) {
         try {
-          const { reply, fallback } = await generateRaw(prompt);
-          if (fallback) setIsFallback(true);
+          const { reply, fallback, model } = await generateRaw(prompt) as any;
+          if (fallback) {
+            setIsFallback(true);
+          } else {
+            setIsFallback(false);
+          }
+          if (model) setActiveModel(model);
           setMessages(prev => prev.map(msg => msg.id === botId ? { ...msg, content: reply } : msg));
           if (!isOpen) setUnread(u => u + 1);
           publish('assistant.interaction', { mode: 'batch.done' });
@@ -193,7 +199,7 @@ export default function AssistantWidget() {
                 {streamingEnabled && (
                   <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-600 text-white">stream</span>
                 )}
-                {isFallback && (
+                {!activeModel && isFallback && (
                   <button
                     type="button"
                     onClick={() => setShowFallbackInfo(o => !o)}
@@ -202,6 +208,9 @@ export default function AssistantWidget() {
                     aria-label="Local fallback mode info"
                     title="Local heuristic fallback (click for info)"
                   >local fallback
+                {activeModel && (
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-600 text-white" title="Active Gemini model">{activeModel}</span>
+                )}
                     {showFallbackInfo && (
                       <div role="tooltip" className="absolute z-10 top-full left-0 mt-1 w-64 text-[11px] p-2 rounded border bg-background shadow">
                         <p className="mb-1 font-medium">Heuristic Mode</p>
