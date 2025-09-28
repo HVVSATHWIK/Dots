@@ -184,23 +184,47 @@ export async function hybridSearchListings(queryText: string, listings: Listing[
   return results.sort((a,b) => b.score - a.score).slice(0, limit);
 }
 
-// Warm preload top-N seller trust scores (call at server start)
+// Warm preload top-N seller trust scores (call at server start) with guards to avoid noisy repeats when permission denied.
+let trustPreloadAttempted = false;
+let trustPreloadSucceeded = false;
+let trustPreloadPermissionDenied = false;
+
+export function getTrustPreloadState() {
+  return { attempted: trustPreloadAttempted, succeeded: trustPreloadSucceeded, permissionDenied: trustPreloadPermissionDenied };
+}
+
 export async function preloadTopSellerTrust(n = 50) {
+  if (trustPreloadAttempted && (trustPreloadSucceeded || trustPreloadPermissionDenied)) return; // nothing more to do
+  trustPreloadAttempted = true;
   try {
     const db = getDb();
-  const snap = await fsGetDocs(fsQuery(fsCollection(db, 'trustLatest'), fsOrderBy('score', 'desc'), fsLimit(n)) as any);
+    const snap = await fsGetDocs(fsQuery(fsCollection(db, 'trustLatest'), fsOrderBy('score', 'desc'), fsLimit(n)) as any);
     snap.docs.forEach(d => {
       const data = d.data() as any;
       if (typeof data.score === 'number') cacheSet(`trust:latest:${data.userId}`, data.score, 60_000);
     });
+    trustPreloadSucceeded = true;
     if (import.meta.env.DEV) console.log(`[trust] preloaded ${snap.docs.length} seller trust scores`);
-  } catch (e) { if (import.meta.env.DEV) console.warn('[trust] preload failed', (e as any)?.message); }
+  } catch (e: any) {
+    const code = e?.code || e?.message;
+    if (code && typeof code === 'string' && code.includes('permission')) {
+      trustPreloadPermissionDenied = true;
+      if (import.meta.env.DEV) console.warn('[trust] preload permission denied – suppressing further attempts this session');
+    } else {
+      if (import.meta.env.DEV) console.warn('[trust] preload failed', e?.message);
+    }
+  }
 }
 
 let refreshTimer: any;
 export function startTrustCacheRefresh(intervalMs = 55_000, topN = 50) {
   if (refreshTimer) return; // singleton
-  const run = async () => { await preloadTopSellerTrust(topN); refreshTimer = setTimeout(run, intervalMs); };
+  const run = async () => {
+    await preloadTopSellerTrust(topN);
+    if (!trustPreloadPermissionDenied) { // only schedule future refreshes if allowed
+      refreshTimer = setTimeout(run, intervalMs);
+    }
+  };
   run();
 }
 export function stopTrustCacheRefresh() { if (refreshTimer) { clearTimeout(refreshTimer); refreshTimer = null; } }

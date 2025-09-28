@@ -51,17 +51,18 @@ export function hasFirebaseConfig(): boolean {
 
 // Log config status for debugging
 if (import.meta.env.DEV) {
-  console.log('[Firebase] Config status:', {
+  const status = {
     hasApiKey: !!config.apiKey,
     hasProjectId: !!config.projectId,
     hasAppId: !!config.appId,
     source: (g.__FIREBASE_CONFIG__ && !import.meta.env.PUBLIC_FB_API_KEY && !import.meta.env.VITE_FB_API_KEY) ? 'global-fallback' : 'env',
-  });
-} else {
-  // Lightweight production diagnostic (no secrets) – logs only if incomplete
-  if (!isConfigComplete(config)) {
-    console.warn('[Firebase] Production config incomplete: apiKey?', !!config.apiKey, 'projectId?', !!config.projectId, 'appId?', !!config.appId);
+  };
+  console.log('[Firebase] Config status:', status);
+  if (!status.hasProjectId) {
+    console.warn('[Firebase] Missing projectId – Firestore calls may return HTML fallback causing "Unexpected token <" JSON parse errors.');
   }
+} else if (!isConfigComplete(config)) {
+  console.warn('[Firebase] Production config incomplete: apiKey?', !!config.apiKey, 'projectId?', !!config.projectId, 'appId?', !!config.appId);
 }
 
 export function getFirebaseApp() {
