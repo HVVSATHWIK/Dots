@@ -34,6 +34,16 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Products: products/{productId}
+    // NOTE: Dashboard currently queries products by sellerId + orderBy(createdAt).
+    // We allow public read (or tighten later) and restrict writes to the owning artisan.
+    match /products/{productId} {
+      allow read: if true; // Consider tightening to visibility/status if needed.
+      allow create: if isArtisan() && request.auth.uid == request.resource.data.sellerId;
+      allow update: if isArtisan() && request.auth.uid == resource.data.sellerId;
+      allow delete: if isArtisan() && request.auth.uid == resource.data.sellerId;
+    }
+
     function isArtisan() {
       return request.auth != null && (request.auth.token.role == 'artisan' || request.auth.token.role == 'admin');
     }

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 vi.mock('../src/lib/feature-flags', () => ({ isFlagEnabled: (k: string) => k === 'aiTTS' }));
 
 describe('tts empty fallback', () => {

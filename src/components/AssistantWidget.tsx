@@ -33,7 +33,6 @@ export default function AssistantWidget() {
   const aiImageGen = isFlagEnabled('aiImageGen');
   const aiTTS = isFlagEnabled('aiTTS');
   const aiVariants = isFlagEnabled('aiImageVariants');
-  const aiAudioControls = isFlagEnabled('aiAudioControls');
   const [debugOpen, setDebugOpen] = React.useState(false);
   const [lastAttempts, setLastAttempts] = React.useState<any[]>([]);
   const [isImaging, setIsImaging] = React.useState(false);

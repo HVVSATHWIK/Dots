@@ -21,6 +21,7 @@ export default function BuyerDashboard() {
   const [stats, setStats] = useState<any>(null);
   const [showTutorial, setShowTutorial] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [firestoreIndexError, setFirestoreIndexError] = useState<{ message: string; url?: string } | null>(null);
 
   useEffect(() => {
     const loadBuyerData = async () => {
@@ -31,14 +32,31 @@ export default function BuyerDashboard() {
 
         // Load recent orders
         const ordersRef = collection(db, 'orders');
-        const q = query(
-          ordersRef,
-          where('buyerId', '==', user.uid),
-          orderBy('createdAt', 'desc'),
-          limit(5)
-        );
-        const ordersSnap = await getDocs(q);
-        const orders = ordersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        let orders: any[] = [];
+        try {
+          const q = query(
+            ordersRef,
+            where('buyerId', '==', user.uid),
+            orderBy('createdAt', 'desc'),
+            limit(5)
+          );
+          const ordersSnap = await getDocs(q);
+          orders = ordersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        } catch (err: any) {
+          if (err?.code === 'failed-precondition' && /index/i.test(err?.message || '')) {
+            const match = (err.message || '').match(/https:\/\/console\.firebase\.google\.com\/[^\s)]+/);
+            setFirestoreIndexError({
+              message: 'Some dashboard queries require a Firestore composite index. Click below to create it.',
+              url: match?.[0]
+            });
+            // Fallback without orderBy
+            const qNoOrder = query(ordersRef, where('buyerId', '==', user.uid), limit(5));
+            const ordersSnap = await getDocs(qNoOrder);
+            orders = ordersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          } else {
+            throw err;
+          }
+        }
         setRecentOrders(orders);
 
         // Calculate stats
@@ -144,6 +162,23 @@ export default function BuyerDashboard() {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-[120rem] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {firestoreIndexError && (
+          <div className="mb-8 p-4 border border-yellow-200 bg-yellow-50 rounded">
+            <p className="font-paragraph text-sm text-yellow-900">
+              {firestoreIndexError.message}
+            </p>
+            {firestoreIndexError.url && (
+              <a
+                href={firestoreIndexError.url}
+                target="_blank"
+                rel="noreferrer"
+                className="font-heading text-sm text-yellow-900 underline mt-2 inline-block"
+              >
+                Create index in Firebase Console
+              </a>
+            )}
+          </div>
+        )}
         {/* Welcome Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 // Mock flag module to force enable image generation
 vi.mock('../src/lib/feature-flags', () => ({ isFlagEnabled: (k: string) => k === 'aiImageGen' }));
 
