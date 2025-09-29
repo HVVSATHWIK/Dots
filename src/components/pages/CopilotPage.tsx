@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Image as Img } from '@/components/ui/image';
-import { Wand2, Mic, Square, Upload, Loader2, Share2, Download, ImagePlus, ShieldCheck } from 'lucide-react';
+import { Wand2, Mic, Square, Upload, Loader2, Share2, Download, ImagePlus, ShieldCheck, AlertTriangle, Bug } from 'lucide-react';
 import { generateListingPack, generateDesignVariations } from '@/integrations/ai';
 import type { ListingPack, DesignVariationResult } from '@/integrations/ai/types';
 import { mintBirthCertificate } from '@/integrations/trust';
@@ -253,14 +253,43 @@ export default function CopilotPage() {
                       {isVarying ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Generating…</> : <><ImagePlus className="w-4 h-4 mr-2" />Generate Variations</>}
                     </Button>
                   </div>
-                  <div>
+                  <div className="space-y-3">
                     {!designs && <p className="font-paragraph text-primary/60">No variations yet.</p>}
                     {designs && (
-                      <div className="grid grid-cols-2 gap-3">
-                        {designs.variations.map((url, i) => (
-                          <Img key={i} src={url} alt={`variation-${i}`} width={180} className="w-full h-28 object-cover rounded" />
-                        ))}
-                      </div>
+                      <>
+                        <div className="flex items-center gap-2 flex-wrap text-xs">
+                          {designs.model && <Badge variant="outline">model: {designs.model}</Badge>}
+                          {designs.fallback && <Badge variant="destructive" className="flex items-center gap-1"><AlertTriangle className="w-3 h-3" />fallback</Badge>}
+                          {designs.override && <Badge variant="secondary">override</Badge>}
+                          {designs.cachedRouter && <Badge variant="secondary">router-cached</Badge>}
+                          {designs.note && <span className="text-primary/60 truncate max-w-[200px]">{designs.note}</span>}
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          {designs.variations.map((url, i) => {
+                            const isData = url.startsWith('data:');
+                            const stub = !isData && /static\.wixstatic\.com\/media/.test(url);
+                            return (
+                              <div key={i} className="relative group">
+                                <Img src={url} alt={`variation-${i}`} width={180} className="w-full h-28 object-cover rounded ring-1 ring-border" />
+                                {stub && <span className="absolute top-1 left-1 bg-black/60 text-[10px] text-white px-1 rounded">stub</span>}
+                                {isData && <span className="absolute top-1 left-1 bg-green-600/70 text-[10px] text-white px-1 rounded">gen</span>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {designs.attempts && designs.attempts.length > 0 && (
+                          <details className="mt-2 text-xs">
+                            <summary className="cursor-pointer flex items-center gap-1"><Bug className="w-3 h-3" />Attempts</summary>
+                            <ul className="mt-1 space-y-1">
+                              {designs.attempts.map((a, i) => (
+                                <li key={i} className="font-mono break-all">
+                                  {a.model ? a.model + ': ' : ''}{a.ok ? 'ok' : 'fail'}{a.via ? ' via ' + a.via : ''}{a.error ? ' – ' + a.error : ''}
+                                </li>
+                              ))}
+                            </ul>
+                          </details>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>

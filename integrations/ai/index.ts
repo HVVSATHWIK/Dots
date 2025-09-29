@@ -83,7 +83,7 @@ export async function generateDesignVariations(input: DesignVariationInput): Pro
       const text = await res.text().catch(() => '');
       throw new Error(`AI API non-JSON response: ${text.slice(0, 240)}`);
     }
-    return await res.json();
+  return await res.json();
   }
   await new Promise(r => setTimeout(r, 700));
   return {
