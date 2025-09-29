@@ -1,8 +1,5 @@
 import type { APIRoute } from 'astro';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-// Optional local transformation fallback (non-AI) using sharp if available.
-let sharp: any = null;
-try { sharp = (await import('sharp')).default; } catch { /* sharp not installed in some runtimes */ }
 import { selectModels, recordModelSuccess } from '@/lib/ai-model-router';
 import { createVariationCacheKey, getCachedImage, setCachedImage } from '@/lib/media-cache';
 import { incr, METRIC } from '@/lib/metrics';
@@ -43,8 +40,13 @@ export const POST: APIRoute = async ({ request }) => {
     if (!apiKey) return json({ ...stubVariations(), fallback: true, note: 'missing api key', attempts }, 200);
   if (!(baseImage instanceof File)) return json({ ...stubVariations(), fallback: true, note: 'missing base image', attempts }, 200);
 
-    // Model candidate loop (reuses image_generate task routing for consistency)
-  const { candidates, override, cached: routerCached } = selectModels('image_generate');
+    // Model candidate loop restricted to Imagen family only per user request
+    const { candidates: rawCandidates, override, cached: routerCached } = selectModels('image_generate');
+    const candidates = rawCandidates.filter(m => m.startsWith('imagen-'));
+    if (!candidates.length) {
+      attempts.push({ ok: false, error: 'no-imagen-models-available' });
+      return json({ ...stubVariations(), fallback: true, attempts, note: 'No Imagen models present in router candidates. Configure imagen-* access.' }, 200);
+    }
     const genAI = new GoogleGenerativeAI(apiKey);
     let baseB64: string;
     try {
@@ -97,78 +99,8 @@ export const POST: APIRoute = async ({ request }) => {
         continue;
       }
     }
-    // All Gemini/Imagen style candidates failed – attempt Stability AI image-to-image if configured
-    const stabilityKey = (process.env.STABILITY_API_KEY || (import.meta as any).env?.STABILITY_API_KEY) as string | undefined;
-    if (!stabilityKey) {
-      attempts.push({ model: 'stability-image2image', ok: false, error: 'STABILITY_API_KEY missing' });
-    }
-    if (stabilityKey) {
-      try {
-        const engine = (process.env.STABILITY_ENGINE || (import.meta as any).env?.STABILITY_ENGINE) || 'stable-diffusion-xl-1024-v1-0';
-        // Prepare multipart form
-        const buf = Buffer.from(await baseImage.arrayBuffer());
-        const form = new FormData();
-        form.append('init_image', new Blob([buf], { type: baseImage.type || 'image/jpeg' }), baseImage.name || 'init.jpg');
-        // Clamp user provided values to safe ranges
-        const imageStrength = Math.min(0.9, Math.max(0.05, strengthParam || 0.30));
-        const stepsClamped = Math.min(60, Math.max(10, stepsParam || 40));
-        const cfgClamped = Math.min(16, Math.max(1, cfgParam || 9));
-        form.append('image_strength', imageStrength.toString());
-        form.append('steps', stepsClamped.toString());
-        form.append('cfg_scale', cfgClamped.toString());
-        form.append('samples', '4');
-        form.append('text_prompts[0][text]', `${prompt}. Preserve the main subject identity.`);
-        form.append('text_prompts[0][weight]', '1');
-        const resp = await fetch(`https://api.stability.ai/v1/generation/${engine}/image-to-image`, {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${stabilityKey}`, 'Accept': 'application/json' },
-          body: form as any
-        });
-        if (!resp.ok) {
-          const txt = await resp.text().catch(()=> '');
-          attempts.push({ model: 'stability-image2image', ok: false, error: `HTTP ${resp.status}: ${txt.slice(0,140)}` });
-        } else {
-          const data: any = await resp.json().catch(()=>null);
-          const arts = data?.artifacts || [];
-            const vars = arts.filter((a: any)=>a.base64).slice(0,4).map((a: any)=>`data:image/png;base64,${a.base64}`);
-          if (vars.length) {
-            attempts.push({ model: 'stability-image2image', ok: true, params: { imageStrength, steps: stepsClamped, cfg: cfgClamped } });
-            setCachedImage(cacheKey, vars);
-            return json({ variations: vars, attempts, model: 'stability-image2image' }, 200);
-          } else {
-            attempts.push({ model: 'stability-image2image', ok: false, error: 'no artifacts' });
-          }
-        }
-      } catch (e: any) {
-        attempts.push({ model: 'stability-image2image', ok: false, error: e?.message || 'stability-error' });
-      }
-    }
-    // All candidates + Stability failed – try local deterministic transforms if sharp present
-    if (sharp && baseImage instanceof File) {
-      try {
-        const buff = Buffer.from(await baseImage.arrayBuffer());
-        const variants: string[] = [];
-        // Simple transforms: original resize, rotate, color tint, blur
-        const pipelineFns: ((img: any) => any)[] = [
-          (img) => img.resize(512, 512, { fit: 'cover' }),
-          (img) => img.resize(512,512,{fit:'cover'}).rotate(5),
-          (img) => img.resize(512,512,{fit:'cover'}).modulate({ saturation: 1.3, brightness: 1.05 }),
-          (img) => img.resize(512,512,{fit:'cover'}).blur(1)
-        ];
-        for (const fn of pipelineFns) {
-          const out = await fn(sharp(buff)).toFormat('png').toBuffer();
-          variants.push(`data:image/png;base64,${out.toString('base64')}`);
-          if (variants.length >= 4) break;
-        }
-        attempts.push({ local: true, ok: true, via: 'sharp-fallback' });
-        setCachedImage(cacheKey, variants);
-        return json({ variations: variants, attempts, fallback: true, note: 'local sharp fallback (no model images)' }, 200);
-      } catch (e: any) {
-        attempts.push({ local: true, ok: false, error: e?.message || 'sharp-fallback-failed' });
-      }
-    }
     const errorSummary = attempts.filter(a => a.ok === false && a.error).map(a => `${a.model || a.stage || 'stage'}:${a.error}`).slice(0,6).join('; ');
-    return json({ ...stubVariations(), attempts, fallback: true, note: 'all models failed' + (errorSummary ? ' – ' + errorSummary : '') }, 200);
+    return json({ ...stubVariations(), attempts, fallback: true, note: 'all imagen models failed' + (errorSummary ? ' – ' + errorSummary : '') }, 200);
   } catch (e: any) {
     attempts.push({ ok: false, fatal: true, error: e?.message || 'fatal error' });
     return json({ ...stubVariations(), fallback: true, attempts, note: 'fatal error' }, 200);
