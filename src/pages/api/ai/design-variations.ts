@@ -80,7 +80,45 @@ export const POST: APIRoute = async ({ request }) => {
         continue;
       }
     }
-    // All candidates failed – try local deterministic transforms if sharp present
+    // All Gemini/Imagen style candidates failed – attempt Stability AI image-to-image if configured
+    const stabilityKey = (process.env.STABILITY_API_KEY || (import.meta as any).env?.STABILITY_API_KEY) as string | undefined;
+    if (stabilityKey) {
+      try {
+        const engine = (process.env.STABILITY_ENGINE || (import.meta as any).env?.STABILITY_ENGINE) || 'stable-diffusion-xl-1024-v1-0';
+        // Prepare multipart form
+        const buf = Buffer.from(await baseImage.arrayBuffer());
+        const form = new FormData();
+        form.append('init_image', new Blob([buf], { type: baseImage.type || 'image/jpeg' }), baseImage.name || 'init.jpg');
+        form.append('image_strength', '0.30'); // retain core motif
+        form.append('steps', '40');
+        form.append('cfg_scale', '9');
+        form.append('samples', '4');
+        form.append('text_prompts[0][text]', `${prompt}. Preserve the main subject identity.`);
+        form.append('text_prompts[0][weight]', '1');
+        const resp = await fetch(`https://api.stability.ai/v1/generation/${engine}/image-to-image`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${stabilityKey}`, 'Accept': 'application/json' },
+          body: form as any
+        });
+        if (!resp.ok) {
+          const txt = await resp.text().catch(()=> '');
+          attempts.push({ model: 'stability-image2image', ok: false, error: `HTTP ${resp.status}: ${txt.slice(0,140)}` });
+        } else {
+          const data: any = await resp.json().catch(()=>null);
+          const arts = data?.artifacts || [];
+            const vars = arts.filter((a: any)=>a.base64).slice(0,4).map((a: any)=>`data:image/png;base64,${a.base64}`);
+          if (vars.length) {
+            attempts.push({ model: 'stability-image2image', ok: true });
+            return json({ variations: vars, attempts, model: 'stability-image2image' }, 200);
+          } else {
+            attempts.push({ model: 'stability-image2image', ok: false, error: 'no artifacts' });
+          }
+        }
+      } catch (e: any) {
+        attempts.push({ model: 'stability-image2image', ok: false, error: e?.message || 'stability-error' });
+      }
+    }
+    // All candidates + Stability failed – try local deterministic transforms if sharp present
     if (sharp && baseImage instanceof File) {
       try {
         const buff = Buffer.from(await baseImage.arrayBuffer());
