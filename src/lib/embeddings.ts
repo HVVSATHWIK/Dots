@@ -117,9 +117,9 @@ export function getTrustCacheStats() { return { ...trustCacheStats, hitRatio: tr
 export function __seedTrustCache(userId: string, score: number) { cacheSet(`trust:latest:${userId}`, score, 60_000); }
 export function __resetTrustCacheStats() { trustCacheStats = { hits: 0, misses: 0 }; }
 
-interface TrustFetchOptions { bypassCache?: boolean; }
+export interface TrustFetchOptions { bypassCache?: boolean; }
 
-async function getLatestTrustScoreMap(ownerIds: string[], opts: TrustFetchOptions = {}): Promise<Record<string, number>> {
+export async function getLatestTrustScoreMap(ownerIds: string[], opts: TrustFetchOptions = {}): Promise<Record<string, number>> {
   const unique = Array.from(new Set(ownerIds));
   if (!unique.length) return {};
   const out: Record<string, number> = {};

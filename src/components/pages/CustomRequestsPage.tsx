@@ -116,7 +116,82 @@ export default function CustomRequestsPage() {
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
-    setUploadedFiles(prev => [...prev, ...files]);
+    
+    // Validate file types (only images)
+    const validFiles = files.filter(file => {
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Invalid file type",
+          description: `${file.name} is not an image. Please upload only image files (JPG, PNG, GIF, WebP).`,
+          variant: "destructive",
+        });
+        return false;
+      }
+      
+      // Check file size (max 10MB per file)
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (file.size > maxSize) {
+        toast({
+          title: "File too large", 
+          description: `${file.name} is ${(file.size / 1024 / 1024).toFixed(1)}MB. Please choose images under 10MB.`,
+          variant: "destructive",
+        });
+        return false;
+      }
+      
+      return true;
+    });
+    
+    if (validFiles.length === 0) return;
+    
+    // Check total file limit (max 5 files)
+    setUploadedFiles(prev => {
+      const newTotal = prev.length + validFiles.length;
+      if (newTotal > 5) {
+        toast({
+          title: "Too many files",
+          description: `You can upload a maximum of 5 reference images. You currently have ${prev.length} file${prev.length !== 1 ? 's' : ''}.`,
+          variant: "destructive",
+        });
+        // Take only what fits under the limit
+        const allowedCount = Math.max(0, 5 - prev.length);
+        return [...prev, ...validFiles.slice(0, allowedCount)];
+      }
+      
+      // Check for duplicates by name and size
+      const duplicates: string[] = [];
+      const uniqueFiles = validFiles.filter(newFile => {
+        const isDuplicate = prev.some(existingFile => 
+          existingFile.name === newFile.name && existingFile.size === newFile.size
+        );
+        if (isDuplicate) {
+          duplicates.push(newFile.name);
+          return false;
+        }
+        return true;
+      });
+      
+      if (duplicates.length > 0) {
+        toast({
+          title: "Duplicate files skipped",
+          description: `${duplicates.join(', ')} ${duplicates.length === 1 ? 'was' : 'were'} already uploaded.`,
+          variant: "default",
+        });
+      }
+      
+      if (uniqueFiles.length > 0) {
+        toast({
+          title: "Files uploaded successfully",
+          description: `Added ${uniqueFiles.length} image${uniqueFiles.length !== 1 ? 's' : ''} to your request.`,
+          variant: "default",
+        });
+      }
+      
+      return [...prev, ...uniqueFiles];
+    });
+    
+    // Clear the input so the same file can be selected again if needed
+    event.target.value = '';
   };
 
   const removeFile = (index: number) => {

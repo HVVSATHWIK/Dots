@@ -42,9 +42,66 @@ export default function CopilotPage() {
 
   const onPickImages = (files: FileList | null) => {
     if (!files) return;
-    setImages(prev => [...prev, ...Array.from(files)].slice(0, 5));
+    
+    const fileArray = Array.from(files);
+    
+    // Validate each file
+    const validFiles: File[] = [];
+    for (const file of fileArray) {
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        alert(`${file.name} is not an image file. Please select only images (JPG, PNG, GIF, WebP).`);
+        continue;
+      }
+      
+      // Check file size (max 20MB for listing generation)
+      const maxSize = 20 * 1024 * 1024; // 20MB
+      if (file.size > maxSize) {
+        alert(`${file.name} is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Please choose images under 20MB.`);
+        continue;
+      }
+      
+      validFiles.push(file);
+    }
+    
+    if (validFiles.length === 0) return;
+    
+    setImages(prev => {
+      const newImages = [...prev, ...validFiles];
+      // Limit to 5 images total
+      if (newImages.length > 5) {
+        alert(`You can only upload up to 5 images. Only the first 5 will be kept.`);
+        return newImages.slice(0, 5);
+      }
+      return newImages;
+    });
   };
-  const onPickVoice = (file: File | null) => file && setVoiceNote(file);
+  const onPickVoice = (file: File | null) => {
+    if (!file) return;
+    
+    // Validate file type
+    if (!file.type.startsWith('audio/')) {
+      alert(`${file.name} is not an audio file. Please select audio files (MP3, WAV, M4A, WebM, etc.).`);
+      return;
+    }
+    
+    // Check file size (max 50MB for audio)
+    const maxSize = 50 * 1024 * 1024; // 50MB
+    if (file.size > maxSize) {
+      alert(`${file.name} is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Please choose audio files under 50MB.`);
+      return;
+    }
+    
+    // Check duration if possible (approximate based on file size)
+    const estimatedDurationMinutes = file.size / (128 * 1024 / 8) / 60; // Estimate for 128kbps audio
+    if (estimatedDurationMinutes > 10) {
+      if (!confirm(`This audio file appears to be quite long (~${estimatedDurationMinutes.toFixed(1)} minutes). Voice notes work best when kept under 2-3 minutes. Continue anyway?`)) {
+        return;
+      }
+    }
+    
+    setVoiceNote(file);
+  };
 
   const startRecording = async () => {
     try {

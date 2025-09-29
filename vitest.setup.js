@@ -4,7 +4,6 @@ import { configure } from '@testing-library/react'
 const originalWarn = console.warn
 const originalError = console.error
 
-
 const UNWANTED_WARNINGS = [
   'Warning: `ReactDOMTestUtils.act` is deprecated in favor of `React.act`',
 ]
@@ -22,6 +21,7 @@ console.error = (...args) => {
   }
   originalError.call(console, ...args)
 }
+
 configure({ 
   testIdAttribute: 'data-testid',
 })
