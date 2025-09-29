@@ -7,6 +7,7 @@ import { selectModels, recordModelSuccess } from '@/lib/ai-model-router';
 import { createVariationCacheKey, getCachedImage, setCachedImage } from '@/lib/media-cache';
 import { incr, METRIC } from '@/lib/metrics';
 import { publish } from '@/lib/event-bus';
+import { createHash } from 'node:crypto';
 
 // This endpoint produces design/background variation suggestions. We avoid ever
 // surfacing a 500 to the UI by returning stub variations if model calls fail.
@@ -43,7 +44,7 @@ export const POST: APIRoute = async ({ request }) => {
   if (!(baseImage instanceof File)) return json({ ...stubVariations(), fallback: true, note: 'missing base image', attempts }, 200);
 
     // Model candidate loop (reuses image_generate task routing for consistency)
-    const { candidates, override, cached } = selectModels('image_generate');
+  const { candidates, override, cached: routerCached } = selectModels('image_generate');
     const genAI = new GoogleGenerativeAI(apiKey);
     let baseB64: string;
     try {
@@ -55,12 +56,12 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Variation cache lookup (hash file content minimal fast hash)
     const buffForHash = Buffer.from(await baseImage.arrayBuffer());
-    const hash = crypto.createHash('sha1').update(buffForHash).digest('hex').slice(0,16);
+    const hash = createHash('sha1').update(buffForHash).digest('hex').slice(0,16);
     const cacheKey = createVariationCacheKey(hash, prompt + `|${strengthParam}|${cfgParam}|${stepsParam}`);
-    const cached = getCachedImage(cacheKey);
-    if (cached) {
+    const cachedVariations = getCachedImage(cacheKey);
+    if (cachedVariations) {
       attempts.push({ cache: true, ok: true, via: 'memory-cache' });
-      return json({ variations: cached, attempts, model: cached[0]?.model || 'cache', cached: true }, 200);
+      return json({ variations: cachedVariations, attempts, model: 'cache', cached: true }, 200);
     }
 
     // For each candidate model, attempt inline image variation generation.
@@ -78,7 +79,7 @@ export const POST: APIRoute = async ({ request }) => {
           recordModelSuccess('image_generate', model);
           // Return as data URLs for UI convenience
             const variations = imgs.map(i => `data:${i.mime};base64,${i.b64}`);
-          return json({ variations, attempts, model, override: !!override, cachedRouter: !!cached }, 200);
+          return json({ variations, attempts, model, override: !!override, cachedRouter: !!routerCached }, 200);
         }
         // If no inline images, fall back to parsing URLs from any text (rare case)
         const txt = result?.response?.text?.() || '';
@@ -88,7 +89,7 @@ export const POST: APIRoute = async ({ request }) => {
           attempts.push({ model, ok: true, via: 'urls' });
           recordModelSuccess('image_generate', model);
           setCachedImage(cacheKey, urls);
-          return json({ variations: urls, attempts, model, override: !!override, cachedRouter: !!cached }, 200);
+          return json({ variations: urls, attempts, model, override: !!override, cachedRouter: !!routerCached }, 200);
         }
         attempts.push({ model, ok: false, error: 'no inline images' });
       } catch (e: any) {
