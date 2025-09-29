@@ -1,5 +1,8 @@
 import type { APIRoute } from 'astro';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+// Optional local transformation fallback (non-AI) using sharp if available.
+let sharp: any = null;
+try { sharp = (await import('sharp')).default; } catch { /* sharp not installed in some runtimes */ }
 import { selectModels, recordModelSuccess } from '@/lib/ai-model-router';
 import { incr, METRIC } from '@/lib/metrics';
 import { publish } from '@/lib/event-bus';
@@ -77,7 +80,29 @@ export const POST: APIRoute = async ({ request }) => {
         continue;
       }
     }
-    // All candidates failed
+    // All candidates failed – try local deterministic transforms if sharp present
+    if (sharp && baseImage instanceof File) {
+      try {
+        const buff = Buffer.from(await baseImage.arrayBuffer());
+        const variants: string[] = [];
+        // Simple transforms: original resize, rotate, color tint, blur
+        const pipelineFns: ((img: any) => any)[] = [
+          (img) => img.resize(512, 512, { fit: 'cover' }),
+          (img) => img.resize(512,512,{fit:'cover'}).rotate(5),
+          (img) => img.resize(512,512,{fit:'cover'}).modulate({ saturation: 1.3, brightness: 1.05 }),
+          (img) => img.resize(512,512,{fit:'cover'}).blur(1)
+        ];
+        for (const fn of pipelineFns) {
+          const out = await fn(sharp(buff)).toFormat('png').toBuffer();
+          variants.push(`data:image/png;base64,${out.toString('base64')}`);
+          if (variants.length >= 4) break;
+        }
+        attempts.push({ local: true, ok: true, via: 'sharp-fallback' });
+        return json({ variations: variants, attempts, fallback: true, note: 'local sharp fallback (no model images)' }, 200);
+      } catch (e: any) {
+        attempts.push({ local: true, ok: false, error: e?.message || 'sharp-fallback-failed' });
+      }
+    }
     return json({ ...stubVariations(), attempts, fallback: true, note: 'all models failed' }, 200);
   } catch (e: any) {
     attempts.push({ ok: false, fatal: true, error: e?.message || 'fatal error' });
