@@ -4,6 +4,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 let sharp: any = null;
 try { sharp = (await import('sharp')).default; } catch { /* sharp not installed in some runtimes */ }
 import { selectModels, recordModelSuccess } from '@/lib/ai-model-router';
+import { createVariationCacheKey, getCachedImage, setCachedImage } from '@/lib/media-cache';
 import { incr, METRIC } from '@/lib/metrics';
 import { publish } from '@/lib/event-bus';
 
@@ -27,15 +28,19 @@ export const POST: APIRoute = async ({ request }) => {
   incr(METRIC.ASSISTANT_RUN);
   const attempts: any[] = [];
   try {
-    const form = await request.formData();
-    const prompt = String(form.get('prompt') ?? 'Refine background and lighting, keep product intact.');
-    const baseImage = form.get('baseImage') as File | null;
+  const form = await request.formData();
+  const prompt = String(form.get('prompt') ?? 'Refine background and lighting, keep product intact.');
+  const baseImage = form.get('baseImage') as File | null;
+  // Optional tuning parameters (sliders in future UI)
+  const strengthParam = Number(form.get('strength') ?? '0.30');
+  const cfgParam = Number(form.get('cfg') ?? '9');
+  const stepsParam = Number(form.get('steps') ?? '40');
     if (prompt.length > 1200) {
       return json({ error: 'prompt too long', fallback: true, attempts }, 400);
     }
     const apiKey = (import.meta.env.GEMINI_API_KEY as string | undefined) ?? (process.env.GEMINI_API_KEY as string | undefined);
     if (!apiKey) return json({ ...stubVariations(), fallback: true, note: 'missing api key', attempts }, 200);
-    if (!(baseImage instanceof File)) return json({ ...stubVariations(), fallback: true, note: 'missing base image', attempts }, 200);
+  if (!(baseImage instanceof File)) return json({ ...stubVariations(), fallback: true, note: 'missing base image', attempts }, 200);
 
     // Model candidate loop (reuses image_generate task routing for consistency)
     const { candidates, override, cached } = selectModels('image_generate');
@@ -46,6 +51,16 @@ export const POST: APIRoute = async ({ request }) => {
     } catch (e: any) {
       attempts.push({ stage: 'encode', ok: false, error: e?.message || 'encode failed' });
       return json({ ...stubVariations(), fallback: true, attempts, note: 'encoding failed' }, 200);
+    }
+
+    // Variation cache lookup (hash file content minimal fast hash)
+    const buffForHash = Buffer.from(await baseImage.arrayBuffer());
+    const hash = crypto.createHash('sha1').update(buffForHash).digest('hex').slice(0,16);
+    const cacheKey = createVariationCacheKey(hash, prompt + `|${strengthParam}|${cfgParam}|${stepsParam}`);
+    const cached = getCachedImage(cacheKey);
+    if (cached) {
+      attempts.push({ cache: true, ok: true, via: 'memory-cache' });
+      return json({ variations: cached, attempts, model: cached[0]?.model || 'cache', cached: true }, 200);
     }
 
     // For each candidate model, attempt inline image variation generation.
@@ -72,6 +87,7 @@ export const POST: APIRoute = async ({ request }) => {
         if (urls.length) {
           attempts.push({ model, ok: true, via: 'urls' });
           recordModelSuccess('image_generate', model);
+          setCachedImage(cacheKey, urls);
           return json({ variations: urls, attempts, model, override: !!override, cachedRouter: !!cached }, 200);
         }
         attempts.push({ model, ok: false, error: 'no inline images' });
@@ -92,9 +108,13 @@ export const POST: APIRoute = async ({ request }) => {
         const buf = Buffer.from(await baseImage.arrayBuffer());
         const form = new FormData();
         form.append('init_image', new Blob([buf], { type: baseImage.type || 'image/jpeg' }), baseImage.name || 'init.jpg');
-        form.append('image_strength', '0.30'); // retain core motif
-        form.append('steps', '40');
-        form.append('cfg_scale', '9');
+        // Clamp user provided values to safe ranges
+        const imageStrength = Math.min(0.9, Math.max(0.05, strengthParam || 0.30));
+        const stepsClamped = Math.min(60, Math.max(10, stepsParam || 40));
+        const cfgClamped = Math.min(16, Math.max(1, cfgParam || 9));
+        form.append('image_strength', imageStrength.toString());
+        form.append('steps', stepsClamped.toString());
+        form.append('cfg_scale', cfgClamped.toString());
         form.append('samples', '4');
         form.append('text_prompts[0][text]', `${prompt}. Preserve the main subject identity.`);
         form.append('text_prompts[0][weight]', '1');
@@ -111,7 +131,8 @@ export const POST: APIRoute = async ({ request }) => {
           const arts = data?.artifacts || [];
             const vars = arts.filter((a: any)=>a.base64).slice(0,4).map((a: any)=>`data:image/png;base64,${a.base64}`);
           if (vars.length) {
-            attempts.push({ model: 'stability-image2image', ok: true });
+            attempts.push({ model: 'stability-image2image', ok: true, params: { imageStrength, steps: stepsClamped, cfg: cfgClamped } });
+            setCachedImage(cacheKey, vars);
             return json({ variations: vars, attempts, model: 'stability-image2image' }, 200);
           } else {
             attempts.push({ model: 'stability-image2image', ok: false, error: 'no artifacts' });
@@ -139,6 +160,7 @@ export const POST: APIRoute = async ({ request }) => {
           if (variants.length >= 4) break;
         }
         attempts.push({ local: true, ok: true, via: 'sharp-fallback' });
+        setCachedImage(cacheKey, variants);
         return json({ variations: variants, attempts, fallback: true, note: 'local sharp fallback (no model images)' }, 200);
       } catch (e: any) {
         attempts.push({ local: true, ok: false, error: e?.message || 'sharp-fallback-failed' });

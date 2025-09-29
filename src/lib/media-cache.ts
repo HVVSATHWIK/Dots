@@ -10,6 +10,11 @@ export function createMediaCacheKey(prompt: string, size: string) {
   return `${size}:${prompt.toLowerCase().trim()}`;
 }
 
+// Variation cache key: includes base image hash + prompt (truncated) so we reuse identical generation requests.
+export function createVariationCacheKey(imgHash: string, prompt: string) {
+  return `var:${imgHash}:${prompt.toLowerCase().trim().slice(0,120)}`;
+}
+
 export function getCachedImage(key: string) {
   const entry = IMAGE_CACHE.get(key);
   if (!entry) return null;
