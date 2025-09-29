@@ -28,6 +28,14 @@ export default function AssistantWidget() {
   const [activeModel, setActiveModel] = React.useState<string | null>(null);
   const [showFallbackInfo, setShowFallbackInfo] = React.useState(false);
   const [images, setImages] = React.useState<{ id: string; b64: string; mime: string }[]>([]);
+  const [selectedImage, setSelectedImage] = React.useState<string | null>(null);
+  const [variantCount, setVariantCount] = React.useState(1);
+  const aiImageGen = isFlagEnabled('aiImageGen');
+  const aiTTS = isFlagEnabled('aiTTS');
+  const aiVariants = isFlagEnabled('aiImageVariants');
+  const aiAudioControls = isFlagEnabled('aiAudioControls');
+  const [debugOpen, setDebugOpen] = React.useState(false);
+  const [lastAttempts, setLastAttempts] = React.useState<any[]>([]);
   const [isImaging, setIsImaging] = React.useState(false);
   const [isSpeaking, setIsSpeaking] = React.useState(false);
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
@@ -229,7 +237,7 @@ export default function AssistantWidget() {
             </div>
             <div className="flex items-center gap-1">
                 {/* Image generate button */}
-                <button
+                {aiImageGen && <button
                   aria-label="Generate image"
                   disabled={isImaging || !input.trim()}
                   onClick={async () => {
@@ -237,10 +245,13 @@ export default function AssistantWidget() {
                     if (!prompt) return;
                     setIsImaging(true);
                     try {
-                      const res = await generateProductImages(prompt, { variants: 1 });
-                      const first = res.images?.[0];
-                      if (first) {
-                        setImages(prev => [{ id: makeId(), b64: first.b64, mime: first.mime }, ...prev]);
+                      const res = await generateProductImages(prompt, { variants: variantCount });
+                      setLastAttempts(res.attempts || []);
+                      const imgs = res.images || [];
+                      if (imgs.length) {
+                        const mapped = imgs.map(i => ({ id: makeId(), b64: i.b64, mime: i.mime }));
+                        setImages(prev => [...mapped, ...prev]);
+                        setSelectedImage(mapped[0].id);
                         publish('assistant.interaction', { mode: 'image.generate' });
                       }
                     } catch (e) {
@@ -249,10 +260,10 @@ export default function AssistantWidget() {
                       setIsImaging(false);
                     }
                   }}
-                  className="p-1 rounded hover:bg-accent disabled:opacity-50 text-[11px] border"
-                >IMG</button>
+                  className="relative p-1 rounded hover:bg-accent disabled:opacity-50 text-[11px] border min-w-9 flex items-center justify-center"
+                >{isImaging ? <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" /> : 'IMG'}</button>}
                 {/* TTS button */}
-                <button
+                {aiTTS && <button
                   aria-label="Speak last assistant reply"
                   disabled={isSpeaking || !messages.find(m=>m.role==='assistant')}
                   onClick={async () => {
@@ -268,7 +279,7 @@ export default function AssistantWidget() {
                           audioRef.current = new Audio();
                         }
                         audioRef.current.src = src;
-                        void audioRef.current.play();
+                        try { await audioRef.current.play(); } catch { /* autoplay fail ignore */ }
                         publish('assistant.interaction', { mode: 'tts.play' });
                       }
                     } catch (e) {
@@ -277,8 +288,9 @@ export default function AssistantWidget() {
                       setIsSpeaking(false);
                     }
                   }}
-                  className="p-1 rounded hover:bg-accent disabled:opacity-50 text-[11px] border"
-                >TTS</button>
+                  className="relative p-1 rounded hover:bg-accent disabled:opacity-50 text-[11px] border min-w-9 flex items-center justify-center"
+                >{isSpeaking ? <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" /> : 'TTS'}</button>}
+              <button aria-label="Debug attempts" onClick={() => setDebugOpen(o=>!o)} className="p-1 rounded hover:bg-accent text-[11px] border">DBG</button>
               <button aria-label="Minimize" onClick={() => { publish('assistant.interaction', { mode: 'close' }); setIsOpen(false); }} className="p-1 rounded hover:bg-accent">
                 <Minus className="w-4 h-4" />
               </button>
@@ -291,9 +303,12 @@ export default function AssistantWidget() {
           {/* Messages */}
           <div className="flex-1 overflow-y-auto px-3 py-2 space-y-2" aria-live="polite">
             {images.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-2">
-                {images.slice(0,4).map(img => (
-                  <img key={img.id} src={`data:${img.mime};base64,${img.b64}`} alt="AI generated" className="w-16 h-16 object-cover rounded border" />
+              <div className="flex flex-wrap gap-2 mb-2" aria-label="Generated images gallery" role="list">
+                {images.slice(0,12).map(img => (
+                  <button type="button" key={img.id} role="listitem" onClick={() => setSelectedImage(img.id)} className={`relative group outline-none ${selectedImage===img.id?'ring-2 ring-primary':''}`}> 
+                    <img src={`data:${img.mime};base64,${img.b64}`} alt="AI generated" className="w-16 h-16 object-cover rounded border" />
+                    {selectedImage===img.id && <span className="absolute inset-0 rounded ring-2 ring-primary pointer-events-none" />}
+                  </button>
                 ))}
               </div>
             )}
@@ -337,6 +352,11 @@ export default function AssistantWidget() {
                 rows={1}
                 className="flex-1 resize-none rounded-xl border px-3 py-2 text-sm outline-none focus:ring-1"
               />
+              {aiVariants && aiImageGen && (
+                <select value={variantCount} onChange={e=>setVariantCount(Number(e.target.value))} className="h-9 text-xs border rounded px-1">
+                  {[1,2,3].map(v => <option key={v} value={v}>{v}x</option>)}
+                </select>
+              )}
               <button
                 onClick={() => void send()}
                 disabled={isSending || !input.trim()}
@@ -348,7 +368,31 @@ export default function AssistantWidget() {
             <div className="mt-1 text-[11px] text-muted-foreground">
               Enter to send • Shift+Enter for newline • Ctrl/Cmd+Shift+K toggles assistant
             </div>
+            {selectedImage && (
+              <div className="mt-2 flex gap-2">
+                <button type="button" className="text-xs border px-2 py-1 rounded" onClick={() => {
+                  const img = images.find(i=>i.id===selectedImage); if (!img) return;
+                  navigator.clipboard?.writeText(`data:${img.mime};base64,${img.b64}`).catch(()=>{});
+                }}>Copy Data URI</button>
+                <button type="button" className="text-xs border px-2 py-1 rounded" onClick={() => {
+                  const img = images.find(i=>i.id===selectedImage); if (!img) return;
+                  const a = document.createElement('a');
+                  a.href = `data:${img.mime};base64,${img.b64}`;
+                  a.download = 'image.png';
+                  document.body.appendChild(a); a.click(); a.remove();
+                }}>Download</button>
+              </div>
+            )}
           </div>
+          {debugOpen && (
+            <div className="border-t max-h-24 overflow-auto text-[10px] p-2 space-y-1 bg-muted/30">
+              <div className="font-medium">Model Attempts</div>
+              {lastAttempts.length === 0 && <div className="opacity-60">None yet</div>}
+              {lastAttempts.map((a,i)=>(
+                <div key={i} className={a.ok? 'text-green-600' : 'text-red-600'}>{a.model}: {a.ok?'ok':a.error}</div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </>

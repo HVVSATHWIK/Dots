@@ -4,6 +4,8 @@ import { selectModels, recordModelSuccess } from '@/lib/ai-model-router';
 import { incr, METRIC } from '@/lib/metrics';
 import { publish } from '@/lib/event-bus';
 import { createMediaCacheKey, getCachedImage, setCachedImage } from '@/lib/media-cache';
+import { consumeRate } from '@/lib/rate-limit';
+import { isFlagEnabled } from '@/lib/feature-flags';
 
 export const prerender = false;
 
@@ -15,9 +17,16 @@ export const POST: APIRoute = async ({ request }) => {
     publish('generation.requested', { kind: 'image-generate' });
     incr(METRIC.ASSISTANT_RUN);
     const { prompt, variants = 1, size = 'square' } = await request.json();
+    if (!isFlagEnabled('aiImageGen')) return json({ error: 'disabled' }, 403);
     if (!prompt || typeof prompt !== 'string') return json({ error: 'Missing prompt' }, 400);
+    if (prompt.length > 4000) return json({ error: 'Prompt too long (max 4000 chars)' }, 400);
+    // Basic per-IP rate limit (best-effort; trust x-forwarded-for else remote address when available)
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'anon';
+    if (!consumeRate(ip, 'image')) {
+      return json({ error: 'rate_limited' }, 429);
+    }
     const apiKey = (import.meta.env.GEMINI_API_KEY as string | undefined) || (process.env.GEMINI_API_KEY as string | undefined);
-    const count = Math.min(Math.max(1, variants), MAX_VARIANTS);
+  const count = Math.min(Math.max(1, variants), MAX_VARIANTS);
     if (!apiKey) return json(heuristicImageFallback(prompt, count), 200);
 
     const { candidates, override, cached } = selectModels('image_generate');

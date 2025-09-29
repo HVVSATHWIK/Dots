@@ -3,6 +3,8 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { selectModels, recordModelSuccess } from '@/lib/ai-model-router';
 import { incr, METRIC } from '@/lib/metrics';
 import { publish } from '@/lib/event-bus';
+import { consumeRate } from '@/lib/rate-limit';
+import { isFlagEnabled } from '@/lib/feature-flags';
 
 export const prerender = false;
 
@@ -10,8 +12,12 @@ export const POST: APIRoute = async ({ request }) => {
   try {
     publish('generation.requested', { kind: 'tts' });
     incr(METRIC.ASSISTANT_RUN);
-    const { text, voice = 'neutral' } = await request.json();
+  const { text, voice = 'neutral' } = await request.json();
+  if (!isFlagEnabled('aiTTS')) return json({ error: 'disabled' }, 403);
     if (!text || typeof text !== 'string') return json({ error: 'Missing text' }, 400);
+  if (text.length > 4000) return json({ error: 'Text too long (max 4000 chars)' }, 400);
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'anon';
+  if (!consumeRate(ip, 'tts')) return json({ error: 'rate_limited' }, 429);
     const apiKey = (import.meta.env.GEMINI_API_KEY as string | undefined) || (process.env.GEMINI_API_KEY as string | undefined);
     if (!apiKey) {
       incr(METRIC.TTS_FALLBACK);

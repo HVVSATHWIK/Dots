@@ -1,4 +1,4 @@
-export type FlagKey = 'hybridSearch' | 'moderation' | 'reputationEdges' | 'pricingElasticityPreview' | 'negotiationBeta' | 'assistantStreaming' | 'searchPersonalization' | 'moderationV2';
+export type FlagKey = 'hybridSearch' | 'moderation' | 'reputationEdges' | 'pricingElasticityPreview' | 'negotiationBeta' | 'assistantStreaming' | 'searchPersonalization' | 'moderationV2' | 'aiImageGen' | 'aiTTS' | 'aiImageVariants' | 'aiAudioControls';
 
 export type FlagDefinition = {
   key: FlagKey;
@@ -19,6 +19,10 @@ let flagDefs: Record<FlagKey, FlagDefinition> = {
   assistantStreaming: { key: 'assistantStreaming', type: 'percent', rolloutPercent: 0 },
   searchPersonalization: { key: 'searchPersonalization', type: 'percent', rolloutPercent: 0 },
   moderationV2: { key: 'moderationV2', type: 'percent', rolloutPercent: 0 },
+  aiImageGen: { key: 'aiImageGen', type: 'boolean', value: true },
+  aiTTS: { key: 'aiTTS', type: 'boolean', value: true },
+  aiImageVariants: { key: 'aiImageVariants', type: 'boolean', value: true },
+  aiAudioControls: { key: 'aiAudioControls', type: 'boolean', value: true },
 };
 
 let loaded = false;
