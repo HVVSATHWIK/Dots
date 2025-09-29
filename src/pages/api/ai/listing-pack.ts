@@ -3,6 +3,10 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { publish } from '@/lib/event-bus';
 import { incr, METRIC } from '@/lib/metrics';
 
+// NOTE: This endpoint predates the unified model router used elsewhere. We keep direct usage
+// for now because it expects a structured JSON object, but add robust fallback + attempts
+// metadata similar to newer endpoints so the UI never sees a raw 500.
+
 export const prerender = false;
 
 // Small helpers
@@ -32,9 +36,10 @@ function extractJson(text: string) {
 }
 
 export const POST: APIRoute = async ({ request }) => {
+  publish('generation.requested', { kind: 'listing-pack' });
+  incr(METRIC.ASSISTANT_RUN);
+  const attempts: any[] = [];
   try {
-    publish('generation.requested', { kind: 'listing-pack' });
-    incr(METRIC.ASSISTANT_RUN);
     const form = await request.formData();
     const languages = JSON.parse(String(form.get('languages') ?? '[]')) as string[];
     const photoTheme = String(form.get('photoTheme') ?? '');
@@ -44,38 +49,23 @@ export const POST: APIRoute = async ({ request }) => {
       if (key.startsWith('images[') && val instanceof File) images.push(val);
     }
 
-  const apiKey = (import.meta.env.GEMINI_API_KEY as string | undefined) ?? (process.env.GEMINI_API_KEY as string | undefined);
-    if (!apiKey) {
-      // Graceful stub response when Gemini key is missing
-      const wantsHindi = languages.includes('hi');
-      const stub = {
-        stub: true,
-        note: 'No GEMINI_API_KEY configured; returning stub listing pack.',
-        title: { en: 'Handcrafted Artisan Piece', ...(wantsHindi ? { hi: 'हस्तनिर्मित कला वस्तु' } : {}) },
-        description: {
-          en: 'A unique, handcrafted item made with care by an Indian artisan. Perfect for gifting or adding charm to your home.',
-          ...(wantsHindi ? { hi: 'एक अनोखी, हस्तनिर्मित वस्तु जो भारतीय कारीगर द्वारा प्रेम से बनाई गई है। उपहार देने या घर की शोभा बढ़ाने के लिए उत्तम।' } : {})
-        },
-        tags: ['handmade', 'artisan', 'craft', 'heritage'],
-        price: { min: 1200, max: 2800, rationale: 'Estimated INR range for similar handmade crafts.' },
-        assets: { cleanedImages: [], poster: undefined, catalogCard: undefined },
-        social: {
-          caption: {
-            en: 'Discover authentic handcrafted beauty. #Handmade #Artisan #Craft',
-            ...(wantsHindi ? { hi: 'ख़री सच्ची हस्तनिर्मित खूबसूरती देखें। #हस्तनिर्मित #कारीगर #कला' } : {})
-          }
-        },
-        meta: { artisanName: 'Unknown Artisan' }
-      };
-      return new Response(JSON.stringify(stub), { status: 200, headers: { 'content-type': 'application/json' } });
+    // Input guardrails
+    if (photoTheme.length > 400) {
+      return new Response(JSON.stringify({ error: 'photoTheme too long', attempts, fallback: true }), { status: 400, headers: { 'content-type': 'application/json' } });
     }
 
-  const genAI = new GoogleGenerativeAI(apiKey);
-  const modelName = (import.meta.env.GEMINI_MODEL as string | undefined) || (process.env.GEMINI_MODEL as string | undefined) || 'gemini-1.5-flash';
-  const model = genAI.getGenerativeModel({ model: modelName });
+    const apiKey = (import.meta.env.GEMINI_API_KEY as string | undefined) ?? (process.env.GEMINI_API_KEY as string | undefined);
+    if (!apiKey) {
+      const wantsHindi = languages.includes('hi');
+      const stub = buildStubListingPack(wantsHindi);
+      return new Response(JSON.stringify({ ...stub, fallback: true, attempts, note: 'No GEMINI_API_KEY configured.' }), { status: 200, headers: { 'content-type': 'application/json' } });
+    }
+
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const modelName = (import.meta.env.GEMINI_MODEL as string | undefined) || (process.env.GEMINI_MODEL as string | undefined) || 'gemini-1.5-flash';
+    const model = genAI.getGenerativeModel({ model: modelName });
 
     const parts: any[] = [];
-    // Text instructions
     parts.push({
       text: `You are a listing and storytelling copilot for artisans.
 Produce a concise JSON matching this TypeScript type (no extra text):
@@ -99,35 +89,73 @@ Guidance:
 - Keep tags relevant and minimal (4-6).
 - price should be reasonable INR min/max with one sentence rationale.
 - social.caption should be WhatsApp-ready, short, and include 2-3 relevant hashtags.
-`
-    });
+` });
 
-    // Attach images
     for (const img of images) {
-      const b64 = await fileToBase64(img);
-      parts.push({ inlineData: { mimeType: img.type || 'image/jpeg', data: b64 } });
+      try {
+        const b64 = await fileToBase64(img);
+        parts.push({ inlineData: { mimeType: img.type || 'image/jpeg', data: b64 } });
+      } catch (e: any) {
+        attempts.push({ stage: 'image-encode', name: img.name, error: e?.message || 'encode failed' });
+      }
     }
 
-    // Attach voice note if present
     if (voiceNote instanceof File) {
-      const b64v = await fileToBase64(voiceNote);
-      parts.push({ inlineData: { mimeType: voiceNote.type || 'audio/mpeg', data: b64v } });
+      try {
+        const b64v = await fileToBase64(voiceNote);
+        parts.push({ inlineData: { mimeType: voiceNote.type || 'audio/mpeg', data: b64v } });
+      } catch (e: any) {
+        attempts.push({ stage: 'audio-encode', name: voiceNote.name, error: e?.message || 'encode failed' });
+      }
     }
 
-    const result = await model.generateContent({ contents: [{ role: 'user', parts }] });
-    const text = result.response.text();
-    const json = extractJson(text);
+    let json: any | null = null;
+    try {
+      const result = await model.generateContent({ contents: [{ role: 'user', parts }] });
+      const text = result.response.text();
+      json = extractJson(text);
+      attempts.push({ model: modelName, ok: true });
+    } catch (e: any) {
+      attempts.push({ model: modelName, ok: false, error: e?.message || 'generation failed' });
+    }
 
-    // Ensure optional Hindi keys are present or removed based on languages
+    if (!json) {
+      const wantsHindi = languages.includes('hi');
+      const stub = buildStubListingPack(wantsHindi);
+      return new Response(JSON.stringify({ ...stub, fallback: true, attempts, note: 'Model generation failed; returning stub.' }), { status: 200, headers: { 'content-type': 'application/json' } });
+    }
+
     if (!languages.includes('hi')) {
-      if (json?.title) delete json.title.hi;
-      if (json?.description) delete json.description.hi;
-      if (json?.social?.caption) delete json.social.caption.hi;
+      if (json?.title) delete json.title?.hi;
+      if (json?.description) delete json.description?.hi;
+      if (json?.social?.caption) delete json.social.caption?.hi;
     }
-
-    return new Response(JSON.stringify(json), { status: 200, headers: { 'content-type': 'application/json' } });
+    return new Response(JSON.stringify({ ...json, attempts, model: modelName }), { status: 200, headers: { 'content-type': 'application/json' } });
   } catch (e: any) {
-    const msg = e?.message ?? 'error';
-    return new Response(JSON.stringify({ error: msg }), { status: 500 });
+    // Absolute last-resort catch; never emit 500 for UX-critical path.
+    const wantsHindi = false; // unknown here
+    const stub = buildStubListingPack(wantsHindi);
+    attempts.push({ ok: false, fatal: true, error: e?.message || 'fatal error' });
+    return new Response(JSON.stringify({ ...stub, fallback: true, attempts, note: 'Fatal error; stub provided.' }), { status: 200, headers: { 'content-type': 'application/json' } });
   }
 };
+
+function buildStubListingPack(wantsHindi: boolean) {
+  return {
+    title: { en: 'Handcrafted Artisan Piece', ...(wantsHindi ? { hi: 'हस्तनिर्मित कला वस्तु' } : {}) },
+    description: {
+      en: 'A unique, handcrafted item made with care by an Indian artisan. Perfect for gifting or adding charm to your home.',
+      ...(wantsHindi ? { hi: 'एक अनोखी, हस्तनिर्मित वस्तु जो भारतीय कारीगर द्वारा प्रेम से बनाई गई है। उपहार देने या घर की शोभा बढ़ाने के लिए उत्तम।' } : {})
+    },
+    tags: ['handmade', 'artisan', 'craft', 'heritage'],
+    price: { min: 1200, max: 2800, rationale: 'Estimated INR range for similar handmade crafts.' },
+    assets: { cleanedImages: [], poster: undefined, catalogCard: undefined },
+    social: {
+      caption: {
+        en: 'Discover authentic handcrafted beauty. #Handmade #Artisan #Craft',
+        ...(wantsHindi ? { hi: 'ख़री सच्ची हस्तनिर्मित खूबसूरती देखें। #हस्तनिर्मित #कारीगर #कला' } : {})
+      }
+    },
+    meta: { artisanName: 'Unknown Artisan' }
+  };
+}
