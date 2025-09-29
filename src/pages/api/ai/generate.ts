@@ -31,10 +31,9 @@ export const POST: APIRoute = async ({ request }) => {
       return new Response(JSON.stringify({ reply, fallback: true }), { status: 200, headers: { 'content-type': 'application/json' } });
     }
     const genAI = new GoogleGenerativeAI(apiKey);
-    const providedRaw = model || (import.meta.env.GEMINI_MODEL as string | undefined) || (process.env.GEMINI_MODEL as string | undefined);
-    const provided = normalizeModelName(providedRaw);
+  const providedRaw = model || (import.meta.env.GEMINI_MODEL as string | undefined) || (process.env.GEMINI_MODEL as string | undefined);
     // Updated list aligned with your /api/ai/models output (preferring 2.5 flash tiers, then 2.0, then legacy fallbacks)
-    const { candidates, override, cached } = selectModels('generate', { forceModel: model });
+  const { candidates, override, cached } = selectModels('generate', { forceModel: providedRaw });
     const baseSystem = system || 'You are a helpful assistant.';
     const attempts: { model: string; ok: boolean; error?: string }[] = [];
     let lastErr: any;

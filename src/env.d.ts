@@ -33,3 +33,6 @@ declare global {
     readonly env: ImportMetaEnv;
   }
 }
+
+  // Ensure this file is treated as a module so that `declare global` augmentation is valid (TS2669 fix)
+  export {};

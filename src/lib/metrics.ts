@@ -28,4 +28,9 @@ export const METRIC = {
   ASSISTANT_STREAM_LAT_SAMPLES: 'assistant.stream.latency.samples',
   PRICE_SUGGEST_EXPOSURE: 'price.suggest.exposure.count',
   PRICE_SUGGEST_OVERRIDE: 'price.suggest.override.count',
+  MODEL_SUCCESS_PREFIX: 'model.success',
+  MODEL_FAIL_PREFIX: 'model.fail',
+  IMAGE_CACHE_HIT: 'image.cache.hit.count',
+  IMAGE_CACHE_MISS: 'image.cache.miss.count',
+  TTS_FALLBACK: 'tts.fallback.count'
 };

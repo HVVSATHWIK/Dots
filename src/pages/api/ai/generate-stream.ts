@@ -3,6 +3,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { publish } from '@/lib/event-bus';
 import { incr, METRIC } from '@/lib/metrics';
 import { fallbackGenerate } from '@/services/assistant/fallback';
+import { selectModels, recordModelSuccess } from '@/lib/ai-model-router';
 
 export const prerender = false;
 
@@ -73,35 +74,57 @@ Keep responses practical, encouraging, and relevant to the artisan community.
 
     // Use real Gemini API with streaming
     const genAI = new GoogleGenerativeAI(apiKey);
-    const modelName = (import.meta.env.GEMINI_MODEL as string | undefined) || (process.env.GEMINI_MODEL as string | undefined) || 'gemini-1.5-flash';
-    const model = genAI.getGenerativeModel({ model: modelName });
+    const { candidates, override, cached } = selectModels('generate');
+  const attempts: { model: string; ok: boolean; error?: string }[] = [];
 
     const stream = new ReadableStream<Uint8Array>({
       start(controller) {
         async function push() {
-          try {
-            const result = await model.generateContentStream({
-              contents: [
-                { role: 'user', parts: [{ text: `${systemPrompt}\n\nUser: ${prompt}\n\nAssistant:` }] },
-              ],
-            });
-
-            for await (const chunk of result.stream) {
-              const chunkText = chunk.text();
-              if (chunkText) {
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ token: chunkText })}\n\n`));
+          for (const modelName of candidates) {
+            try {
+              const model = genAI.getGenerativeModel({ model: modelName });
+              const result = await model.generateContentStream({
+                contents: [
+                  { role: 'user', parts: [{ text: `${systemPrompt}\n\nUser: ${prompt}\n\nAssistant:` }] },
+                ],
+              });
+              attempts.push({ model: modelName, ok: true });
+              let anyToken = false;
+              for await (const chunk of result.stream) {
+                const chunkText = chunk.text();
+                if (chunkText) {
+                  anyToken = true;
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ token: chunkText, model: modelName })}\n\n`));
+                }
               }
+              if (!anyToken) throw new Error('empty-stream');
+              recordModelSuccess('generate', modelName);
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true, model: modelName, override: !!override, cachedRouter: !!cached, attempts })}\n\n`));
+              const elapsed = Date.now() - startMs;
+              incr(METRIC.ASSISTANT_STREAM_LAT_TOTAL_MS, elapsed);
+              incr(METRIC.ASSISTANT_STREAM_LAT_SAMPLES);
+              controller.close();
+              return;
+            } catch (err: any) {
+              const msg = err?.message || String(err);
+              attempts.push({ model: modelName, ok: false, error: msg.slice(0,200) });
+              if (/unauth|denied|permission/i.test(msg)) break; // do not continue if permission issue
+              continue;
             }
-
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true })}\n\n`));
-            const elapsed = Date.now() - startMs;
-            incr(METRIC.ASSISTANT_STREAM_LAT_TOTAL_MS, elapsed);
-            incr(METRIC.ASSISTANT_STREAM_LAT_SAMPLES);
-            controller.close();
-          } catch (error) {
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: 'Sorry, I encountered an error. Please try again.' })}\n\n`));
-            controller.close();
           }
+          // All models failed — fallback heuristic streaming
+          const fallbackReply = fallbackGenerate(prompt);
+          const tokens = fallbackReply.split(/(\s+)/);
+          for (const t of tokens) {
+            if (!t) continue;
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ token: t, fallback: true })}\n\n`));
+            await sleep(25 + Math.random() * 40);
+          }
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true, fallback: true, attempts })}\n\n`));
+          const elapsed = Date.now() - startMs;
+          incr(METRIC.ASSISTANT_STREAM_LAT_TOTAL_MS, elapsed);
+          incr(METRIC.ASSISTANT_STREAM_LAT_SAMPLES);
+          controller.close();
         }
         void push();
       }

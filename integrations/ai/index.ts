@@ -208,6 +208,30 @@ export async function generateImage(input: GenerateImageInput): Promise<Generate
   return await res.json();
 }
 
+// New: product / concept image generation via /api/ai/image-generate
+export async function generateProductImages(prompt: string, opts?: { variants?: number; size?: string }) {
+  const res = await fetch(`${api}/image-generate`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ prompt, variants: opts?.variants, size: opts?.size })
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!json.images) throw new Error(`image-generate failed (${res.status})`);
+  return json as { images: { b64: string; mime: string; model?: string }[]; fallback?: boolean; attempts?: any[] };
+}
+
+// New: text-to-speech synthesis via /api/ai/tts
+export async function speak(text: string, opts?: { voice?: string }) {
+  const res = await fetch(`${api}/tts`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ text, voice: opts?.voice })
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!json.audio) throw new Error(`tts failed (${res.status})`);
+  return json as { audio: { b64: string; mime: string }; model?: string; attempts?: any[]; fallback?: boolean };
+}
+
 // Image captioning (Gemini vision): send files or URLs; returns structured captions
 export type Caption = {
   title: string;

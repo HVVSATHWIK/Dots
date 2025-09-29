@@ -2,7 +2,7 @@
 // Selects candidate models per task with optional latency / quality biases and
 // remembers last successful model during the current runtime.
 
-export type AiTask = 'chat' | 'generate' | 'listing_pack' | 'design_variations' | 'caption' | 'pricing_advice' | 'bulk';
+export type AiTask = 'chat' | 'generate' | 'listing_pack' | 'design_variations' | 'caption' | 'pricing_advice' | 'bulk' | 'image_generate' | 'tts';
 
 interface SelectOptions {
   latencyBias?: 'low' | 'balanced' | 'quality';
@@ -39,6 +39,10 @@ export function selectModels(task: AiTask, opts: SelectOptions = {}): Selection 
       case 'design_variations':
       case 'caption':
         return ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-flash-lite'];
+      case 'image_generate':
+        return ['imagen-4.0-generate-001', 'imagen-3.0-generate-002', 'gemini-2.0-flash-exp-image-generation', 'gemini-2.5-flash'];
+      case 'tts':
+        return ['gemini-2.5-flash-preview-tts', 'gemini-2.5-pro-preview-tts', 'gemini-2.5-flash'];
       case 'chat':
       case 'generate':
       default:

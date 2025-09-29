@@ -2,7 +2,7 @@ import * as React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { MessageCircle, X, Minus, Send } from 'lucide-react';
-import { generateRaw } from '@/integrations/ai';
+import { generateRaw, generateProductImages, speak } from '@/integrations/ai';
 import { isFlagEnabled } from '@/lib/feature-flags';
 import { AssistantMode } from '@/services/assistant/modes';
 import { publish } from '@/lib/event-bus';
@@ -27,6 +27,10 @@ export default function AssistantWidget() {
   const [isFallback, setIsFallback] = React.useState(false);
   const [activeModel, setActiveModel] = React.useState<string | null>(null);
   const [showFallbackInfo, setShowFallbackInfo] = React.useState(false);
+  const [images, setImages] = React.useState<{ id: string; b64: string; mime: string }[]>([]);
+  const [isImaging, setIsImaging] = React.useState(false);
+  const [isSpeaking, setIsSpeaking] = React.useState(false);
+  const audioRef = React.useRef<HTMLAudioElement | null>(null);
   const endRef = React.useRef<HTMLDivElement | null>(null);
 
   // Keyboard shortcuts: Ctrl/Cmd + Shift + K to toggle; Esc to close
@@ -224,6 +228,57 @@ export default function AssistantWidget() {
               </div>
             </div>
             <div className="flex items-center gap-1">
+                {/* Image generate button */}
+                <button
+                  aria-label="Generate image"
+                  disabled={isImaging || !input.trim()}
+                  onClick={async () => {
+                    const prompt = input.trim();
+                    if (!prompt) return;
+                    setIsImaging(true);
+                    try {
+                      const res = await generateProductImages(prompt, { variants: 1 });
+                      const first = res.images?.[0];
+                      if (first) {
+                        setImages(prev => [{ id: makeId(), b64: first.b64, mime: first.mime }, ...prev]);
+                        publish('assistant.interaction', { mode: 'image.generate' });
+                      }
+                    } catch (e) {
+                      setError('Image generation failed');
+                    } finally {
+                      setIsImaging(false);
+                    }
+                  }}
+                  className="p-1 rounded hover:bg-accent disabled:opacity-50 text-[11px] border"
+                >IMG</button>
+                {/* TTS button */}
+                <button
+                  aria-label="Speak last assistant reply"
+                  disabled={isSpeaking || !messages.find(m=>m.role==='assistant')}
+                  onClick={async () => {
+                    const last = [...messages].reverse().find(m => m.role === 'assistant');
+                    if (!last) return;
+                    setIsSpeaking(true);
+                    try {
+                      const out = await speak(last.content);
+                      const audioData = out.audio?.b64;
+                      if (audioData) {
+                        const src = `data:${out.audio.mime};base64,${audioData}`;
+                        if (!audioRef.current) {
+                          audioRef.current = new Audio();
+                        }
+                        audioRef.current.src = src;
+                        void audioRef.current.play();
+                        publish('assistant.interaction', { mode: 'tts.play' });
+                      }
+                    } catch (e) {
+                      setError('Speech synthesis failed');
+                    } finally {
+                      setIsSpeaking(false);
+                    }
+                  }}
+                  className="p-1 rounded hover:bg-accent disabled:opacity-50 text-[11px] border"
+                >TTS</button>
               <button aria-label="Minimize" onClick={() => { publish('assistant.interaction', { mode: 'close' }); setIsOpen(false); }} className="p-1 rounded hover:bg-accent">
                 <Minus className="w-4 h-4" />
               </button>
@@ -235,6 +290,13 @@ export default function AssistantWidget() {
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto px-3 py-2 space-y-2" aria-live="polite">
+            {images.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-2">
+                {images.slice(0,4).map(img => (
+                  <img key={img.id} src={`data:${img.mime};base64,${img.b64}`} alt="AI generated" className="w-16 h-16 object-cover rounded border" />
+                ))}
+              </div>
+            )}
             {messages.length === 0 && (
               <p className="text-sm text-muted-foreground">Ask about titles, tags, pricing, or photography tips…</p>
             )}
