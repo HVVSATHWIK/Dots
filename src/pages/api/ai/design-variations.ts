@@ -82,6 +82,9 @@ export const POST: APIRoute = async ({ request }) => {
     }
     // All Gemini/Imagen style candidates failed – attempt Stability AI image-to-image if configured
     const stabilityKey = (process.env.STABILITY_API_KEY || (import.meta as any).env?.STABILITY_API_KEY) as string | undefined;
+    if (!stabilityKey) {
+      attempts.push({ model: 'stability-image2image', ok: false, error: 'STABILITY_API_KEY missing' });
+    }
     if (stabilityKey) {
       try {
         const engine = (process.env.STABILITY_ENGINE || (import.meta as any).env?.STABILITY_ENGINE) || 'stable-diffusion-xl-1024-v1-0';
@@ -141,7 +144,8 @@ export const POST: APIRoute = async ({ request }) => {
         attempts.push({ local: true, ok: false, error: e?.message || 'sharp-fallback-failed' });
       }
     }
-    return json({ ...stubVariations(), attempts, fallback: true, note: 'all models failed' }, 200);
+    const errorSummary = attempts.filter(a => a.ok === false && a.error).map(a => `${a.model || a.stage || 'stage'}:${a.error}`).slice(0,6).join('; ');
+    return json({ ...stubVariations(), attempts, fallback: true, note: 'all models failed' + (errorSummary ? ' – ' + errorSummary : '') }, 200);
   } catch (e: any) {
     attempts.push({ ok: false, fatal: true, error: e?.message || 'fatal error' });
     return json({ ...stubVariations(), fallback: true, attempts, note: 'fatal error' }, 200);
