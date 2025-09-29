@@ -1,5 +1,8 @@
 import type { APIRoute } from 'astro';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { selectModels, recordModelSuccess } from '@/lib/ai-model-router';
+import { incr, METRIC } from '@/lib/metrics';
+import { publish } from '@/lib/event-bus';
 
 // This endpoint produces design/background variation suggestions. We avoid ever
 // surfacing a 500 to the UI by returning stub variations if model calls fail.
@@ -17,59 +20,68 @@ async function fileToBase64(file: File) {
 }
 
 export const POST: APIRoute = async ({ request }) => {
+  publish('generation.requested', { kind: 'design-variations' });
+  incr(METRIC.ASSISTANT_RUN);
   const attempts: any[] = [];
   try {
     const form = await request.formData();
     const prompt = String(form.get('prompt') ?? 'Refine background and lighting, keep product intact.');
     const baseImage = form.get('baseImage') as File | null;
-
     if (prompt.length > 1200) {
-      return new Response(JSON.stringify({ error: 'prompt too long', fallback: true, attempts }), { status: 400, headers: { 'content-type': 'application/json' } });
+      return json({ error: 'prompt too long', fallback: true, attempts }, 400);
     }
-
     const apiKey = (import.meta.env.GEMINI_API_KEY as string | undefined) ?? (process.env.GEMINI_API_KEY as string | undefined);
-    if (!apiKey || !(baseImage instanceof File)) {
-      return new Response(JSON.stringify({ ...stubVariations(), fallback: true, note: 'missing api key or base image', attempts }), { status: 200, headers: { 'content-type': 'application/json' } });
-    }
+    if (!apiKey) return json({ ...stubVariations(), fallback: true, note: 'missing api key', attempts }, 200);
+    if (!(baseImage instanceof File)) return json({ ...stubVariations(), fallback: true, note: 'missing base image', attempts }, 200);
 
+    // Model candidate loop (reuses image_generate task routing for consistency)
+    const { candidates, override, cached } = selectModels('image_generate');
     const genAI = new GoogleGenerativeAI(apiKey);
-    const modelName = (import.meta.env.GEMINI_MODEL as string | undefined) || (process.env.GEMINI_MODEL as string | undefined) || 'gemini-1.5-flash';
-    const model = genAI.getGenerativeModel({ model: modelName });
-
-    let b64: string | null = null;
+    let baseB64: string;
     try {
-      b64 = await fileToBase64(baseImage);
+      baseB64 = await fileToBase64(baseImage);
     } catch (e: any) {
       attempts.push({ stage: 'encode', ok: false, error: e?.message || 'encode failed' });
-      return new Response(JSON.stringify({ ...stubVariations(), fallback: true, attempts, note: 'image encoding failed' }), { status: 200, headers: { 'content-type': 'application/json' } });
+      return json({ ...stubVariations(), fallback: true, attempts, note: 'encoding failed' }, 200);
     }
 
-    const parts: any[] = [
-      { text: `Using this product image, generate 3-4 alternative designs or backgrounds.\nReturn only data URLs (base64) if you directly output images; otherwise respond with absolute URLs.\nIf not capable of outputting images in this environment, reply with four example URLs representative of variations.` },
-      { inlineData: { mimeType: baseImage.type || 'image/jpeg', data: b64 } },
-      { text: `Style instructions: ${prompt}` },
-    ];
-
-    let text: string | null = null;
-    try {
-      const result = await model.generateContent({ contents: [{ role: 'user', parts }] });
-      text = result.response.text();
-      attempts.push({ model: modelName, ok: true });
-    } catch (e: any) {
-      attempts.push({ model: modelName, ok: false, error: e?.message || 'generation failed' });
+    // For each candidate model, attempt inline image variation generation.
+    for (const model of candidates) {
+      try {
+        const m = genAI.getGenerativeModel({ model });
+        const instruction = `You are an image variation engine. Produce 3-4 high-quality variation images derived from the base product/motif while preserving the core subject identity. Variation prompt: ${prompt}. DO NOT return textual descriptions. Return ONLY images.`;
+        const result: any = await m.generateContent({
+          contents: [{ role: 'user', parts: [ { text: instruction }, { inlineData: { mimeType: baseImage.type || 'image/jpeg', data: baseB64 } } ] }]
+        } as any);
+        const parts: any[] = result?.response?.candidates?.[0]?.content?.parts || [];
+        const imgs = parts.filter(p => p.inlineData?.data).slice(0, 4).map(p => ({ b64: p.inlineData.data, mime: p.inlineData.mimeType || 'image/png' }));
+        if (imgs.length) {
+          attempts.push({ model, ok: true });
+          recordModelSuccess('image_generate', model);
+          // Return as data URLs for UI convenience
+            const variations = imgs.map(i => `data:${i.mime};base64,${i.b64}`);
+          return json({ variations, attempts, model, override: !!override, cachedRouter: !!cached }, 200);
+        }
+        // If no inline images, fall back to parsing URLs from any text (rare case)
+        const txt = result?.response?.text?.() || '';
+        const urlRegex = /(https?:\/\/[^\s)\]]+)/g;
+        const urls = Array.from(txt.matchAll(urlRegex)).map(m => m[1]).slice(0,4);
+        if (urls.length) {
+          attempts.push({ model, ok: true, via: 'urls' });
+          recordModelSuccess('image_generate', model);
+          return json({ variations: urls, attempts, model, override: !!override, cachedRouter: !!cached }, 200);
+        }
+        attempts.push({ model, ok: false, error: 'no inline images' });
+      } catch (e: any) {
+        attempts.push({ model, ok: false, error: e?.message || 'generation failed' });
+        continue;
+      }
     }
-
-    if (!text) {
-      return new Response(JSON.stringify({ ...stubVariations(), fallback: true, attempts, note: 'model generation failed' }), { status: 200, headers: { 'content-type': 'application/json' } });
-    }
-
-    const urlRegex = /(https?:\/\/[^\s)\]]+)/g;
-    const urls = Array.from(text.matchAll(urlRegex)).map(m => m[1]).slice(0, 4);
-    const variations = urls.length > 0 ? urls : stubVariations().variations;
-    return new Response(JSON.stringify({ variations, attempts, model: modelName, fallback: urls.length === 0 }), { status: 200, headers: { 'content-type': 'application/json' } });
+    // All candidates failed
+    return json({ ...stubVariations(), attempts, fallback: true, note: 'all models failed' }, 200);
   } catch (e: any) {
     attempts.push({ ok: false, fatal: true, error: e?.message || 'fatal error' });
-    return new Response(JSON.stringify({ ...stubVariations(), fallback: true, attempts, note: 'fatal error' }), { status: 200, headers: { 'content-type': 'application/json' } });
+    return json({ ...stubVariations(), fallback: true, attempts, note: 'fatal error' }, 200);
   }
 };
 
@@ -82,4 +94,8 @@ function stubVariations() {
       'https://static.wixstatic.com/media/d7d9fb_ae1d196d955243b49e7f585bf4e4532e~mv2.png?originWidth=1920&originHeight=1024',
     ],
   };
+}
+
+function json(obj: any, status = 200) {
+  return new Response(JSON.stringify(obj), { status, headers: { 'content-type': 'application/json' } });
 }
