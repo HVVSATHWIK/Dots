@@ -6,11 +6,27 @@ import { publish } from '@/lib/event-bus';
 import { createMediaCacheKey, getCachedImage, setCachedImage } from '@/lib/media-cache';
 import { consumeRate } from '@/lib/rate-limit';
 import { isFlagEnabled } from '@/lib/feature-flags';
+import { vertexPredict, getVertexEnv } from '@/lib/vertex-imagen';
 
 export const prerender = false;
 
 const MAX_VARIANTS = 3;
 const DEFAULT_MIME = 'image/png';
+
+async function tryVertexImagen(prompt: string, count: number) {
+  try {
+    const result = await vertexPredict({ prompt, sampleCount: count });
+    const images = result.images
+      .map((img, idx) => ({ b64: img.b64, mime: img.mime || DEFAULT_MIME, model: `vertex:${result.model}`, meta: { ...(img.meta ?? {}), index: idx } }))
+      .filter(Boolean) as { b64: string; mime: string; model: string; meta: { index: number } }[];
+    return { images, raw: result.raw, model: `vertex:${result.model}` };
+  } catch (err: any) {
+    if (err?.message === 'vertex-missing-credentials') {
+      return null;
+    }
+    throw err;
+  }
+}
 
 export const POST: APIRoute = async ({ request }) => {
   try {
@@ -26,8 +42,31 @@ export const POST: APIRoute = async ({ request }) => {
       return json({ error: 'rate_limited' }, 429);
     }
     const apiKey = (import.meta.env.GEMINI_API_KEY as string | undefined) || (process.env.GEMINI_API_KEY as string | undefined);
-  const count = Math.min(Math.max(1, variants), MAX_VARIANTS);
-    if (!apiKey) return json(heuristicImageFallback(prompt, count), 200);
+    const vertexAttempted: { model: string; ok: boolean; error?: string }[] = [];
+    const count = Math.min(Math.max(1, variants), MAX_VARIANTS);
+    if (!apiKey) {
+      try {
+        const vertex = await tryVertexImagen(prompt, count);
+        if (vertex && vertex.images.length) {
+          const cleaned = vertex.images.slice(0, count).map(img => ({ b64: img.b64, mime: img.mime, model: img.model }));
+          return json({ images: cleaned, model: vertex.model, attempts: [{ model: vertex.model, ok: true, source: 'vertex' }], vertex: true }, 200);
+        }
+      } catch (err: any) {
+        vertexAttempted.push({ model: 'vertex-imagen', ok: false, error: err?.message?.slice(0, 240) });
+      }
+      return json({ ...heuristicImageFallback(prompt, count), attempts: vertexAttempted, fallback: true }, 200);
+    }
+
+    let vertexResult: Awaited<ReturnType<typeof tryVertexImagen>> | null = null;
+    try {
+      vertexResult = await tryVertexImagen(prompt, count);
+      if (vertexResult && vertexResult.images.length) {
+        const imgs = vertexResult.images.slice(0, count).map(img => ({ b64: img.b64, mime: img.mime, model: img.model }));
+        return json({ images: imgs, attempts: [{ model: vertexResult.model, ok: true, source: 'vertex' }], model: vertexResult.model, vertex: true }, 200);
+      }
+    } catch (err: any) {
+      vertexAttempted.push({ model: getVertexEnv('IMAGEN_MODEL') || 'vertex-imagen', ok: false, error: err?.message?.slice(0, 240) });
+    }
 
     const { candidates, override, cached } = selectModels('image_generate');
     const cacheKey = createMediaCacheKey(prompt, size);
@@ -39,7 +78,7 @@ export const POST: APIRoute = async ({ request }) => {
     incr(METRIC.IMAGE_CACHE_MISS);
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const attempts: { model: string; ok: boolean; error?: string }[] = [];
+    const attempts: { model: string; ok: boolean; error?: string; source?: string }[] = [...vertexAttempted];
     let lastErr: any;
     for (const model of candidates) {
       try {

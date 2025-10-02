@@ -1,15 +1,17 @@
 import type { APIRoute } from 'astro';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { selectModels, recordModelSuccess } from '@/lib/ai-model-router';
 import { createVariationCacheKey, getCachedImage, setCachedImage } from '@/lib/media-cache';
 import { incr, METRIC } from '@/lib/metrics';
 import { publish } from '@/lib/event-bus';
+import { vertexPredict, getVertexEnv } from '@/lib/vertex-imagen';
 import { createHash } from 'node:crypto';
 
 // This endpoint produces design/background variation suggestions. We avoid ever
 // surfacing a 500 to the UI by returning stub variations if model calls fail.
 
 export const prerender = false;
+
+const DEFAULT_VARIATION_MODEL = 'imagen-3.0-vary-002';
+const MAX_VARIATIONS = 4;
 
 async function fileToBase64(file: File) {
   const ab = await file.arrayBuffer();
@@ -26,28 +28,21 @@ export const POST: APIRoute = async ({ request }) => {
   incr(METRIC.ASSISTANT_RUN);
   const attempts: any[] = [];
   try {
-  const form = await request.formData();
-  const prompt = String(form.get('prompt') ?? 'Refine background and lighting, keep product intact.');
-  const baseImage = form.get('baseImage') as File | null;
-  // Optional tuning parameters (sliders in future UI)
-  const strengthParam = Number(form.get('strength') ?? '0.30');
-  const cfgParam = Number(form.get('cfg') ?? '9');
-  const stepsParam = Number(form.get('steps') ?? '40');
+    const form = await request.formData();
+    const prompt = String(form.get('prompt') ?? 'Refine background and lighting, keep product intact.');
+    const baseImage = form.get('baseImage') as File | null;
+    // Optional tuning parameters (sliders in future UI)
+    const strengthParam = Number(form.get('strength') ?? '0.30');
+    const cfgParam = Number(form.get('cfg') ?? '9');
+    const stepsParam = Number(form.get('steps') ?? '40');
+
     if (prompt.length > 1200) {
       return json({ error: 'prompt too long', fallback: true, attempts }, 400);
     }
-    const apiKey = (import.meta.env.GEMINI_API_KEY as string | undefined) ?? (process.env.GEMINI_API_KEY as string | undefined);
-    if (!apiKey) return json({ ...stubVariations(), fallback: true, note: 'missing api key', attempts }, 200);
-  if (!(baseImage instanceof File)) return json({ ...stubVariations(), fallback: true, note: 'missing base image', attempts }, 200);
-
-    // Model candidate loop restricted to Imagen family only per user request
-    const { candidates: rawCandidates, override, cached: routerCached } = selectModels('image_generate');
-    const candidates = rawCandidates.filter(m => m.startsWith('imagen-'));
-    if (!candidates.length) {
-      attempts.push({ ok: false, error: 'no-imagen-models-available' });
-      return json({ ...stubVariations(), fallback: true, attempts, note: 'No Imagen models present in router candidates. Configure imagen-* access.' }, 200);
+    if (!(baseImage instanceof File)) {
+      return json({ ...stubVariations(), fallback: true, note: 'missing base image', attempts }, 200);
     }
-    const genAI = new GoogleGenerativeAI(apiKey);
+
     let baseB64: string;
     try {
       baseB64 = await fileToBase64(baseImage);
@@ -58,7 +53,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Variation cache lookup (hash file content minimal fast hash)
     const buffForHash = Buffer.from(await baseImage.arrayBuffer());
-    const hash = createHash('sha1').update(buffForHash).digest('hex').slice(0,16);
+    const hash = createHash('sha1').update(buffForHash).digest('hex').slice(0, 16);
     const cacheKey = createVariationCacheKey(hash, prompt + `|${strengthParam}|${cfgParam}|${stepsParam}`);
     const cachedVariations = getCachedImage(cacheKey);
     if (cachedVariations) {
@@ -66,41 +61,38 @@ export const POST: APIRoute = async ({ request }) => {
       return json({ variations: cachedVariations, attempts, model: 'cache', cached: true }, 200);
     }
 
-    // For each candidate model, attempt inline image variation generation.
-    for (const model of candidates) {
-      try {
-        const m = genAI.getGenerativeModel({ model });
-        const instruction = `You are an image variation engine. Produce 3-4 high-quality variation images derived from the base product/motif while preserving the core subject identity. Variation prompt: ${prompt}. DO NOT return textual descriptions. Return ONLY images.`;
-        const result: any = await m.generateContent({
-          contents: [{ role: 'user', parts: [ { text: instruction }, { inlineData: { mimeType: baseImage.type || 'image/jpeg', data: baseB64 } } ] }]
-        } as any);
-        const parts: any[] = result?.response?.candidates?.[0]?.content?.parts || [];
-        const imgs = parts.filter(p => p.inlineData?.data).slice(0, 4).map(p => ({ b64: p.inlineData.data, mime: p.inlineData.mimeType || 'image/png' }));
-        if (imgs.length) {
-          attempts.push({ model, ok: true });
-          recordModelSuccess('image_generate', model);
-          // Return as data URLs for UI convenience
-            const variations = imgs.map(i => `data:${i.mime};base64,${i.b64}`);
-          return json({ variations, attempts, model, override: !!override, cachedRouter: !!routerCached }, 200);
-        }
-        // If no inline images, fall back to parsing URLs from any text (rare case)
-        const txt = result?.response?.text?.() || '';
-        const urlRegex = /(https?:\/\/[^\s)\]]+)/g;
-        const urls = Array.from(txt.matchAll(urlRegex)).map(m => m[1]).slice(0,4);
-        if (urls.length) {
-          attempts.push({ model, ok: true, via: 'urls' });
-          recordModelSuccess('image_generate', model);
-          setCachedImage(cacheKey, urls);
-          return json({ variations: urls, attempts, model, override: !!override, cachedRouter: !!routerCached }, 200);
-        }
-        attempts.push({ model, ok: false, error: 'no inline images' });
-      } catch (e: any) {
-        attempts.push({ model, ok: false, error: e?.message || 'generation failed' });
-        continue;
+    const vertexModel = getVertexEnv('VARIATION_MODEL') || getVertexEnv('IMAGEN_VARIATION_MODEL') || getVertexEnv('IMAGEN_MODEL') || DEFAULT_VARIATION_MODEL;
+    const variationCount = MAX_VARIATIONS;
+    try {
+      const vertex = await vertexPredict({
+        prompt,
+        sampleCount: variationCount,
+        model: vertexModel,
+        imageBase64: baseB64,
+        imageMimeType: baseImage.type || 'image/jpeg',
+      });
+      if (vertex.images.length) {
+        const variations = vertex.images.slice(0, variationCount).map(img => `data:${img.mime || 'image/png'};base64,${img.b64}`);
+        attempts.push({ model: `vertex:${vertex.model}`, ok: true, source: 'vertex', params: { strength: strengthParam, cfg: cfgParam, steps: stepsParam } });
+        setCachedImage(cacheKey, variations);
+        return json({ variations, attempts, model: `vertex:${vertex.model}`, vertex: true }, 200);
       }
+      attempts.push({ model: `vertex:${vertex.model}`, ok: false, source: 'vertex', error: 'no images returned' });
+    } catch (err: any) {
+      if (err?.message === 'vertex-missing-credentials') {
+        attempts.push({ ok: false, source: 'vertex', error: 'vertex-missing-credentials' });
+        return json({ ...stubVariations(), fallback: true, attempts, note: 'Vertex credentials missing – set VERTEX_SERVICE_ACCOUNT_JSON / GOOGLE_APPLICATION_CREDENTIALS or VERTEX_ACCESS_TOKEN.' }, 200);
+      }
+      const msg = err?.message || 'vertex-error';
+      attempts.push({ model: `vertex:${vertexModel}`, ok: false, source: 'vertex', error: msg.slice(0, 240) });
     }
-    const errorSummary = attempts.filter(a => a.ok === false && a.error).map(a => `${a.model || a.stage || 'stage'}:${a.error}`).slice(0,6).join('; ');
-    return json({ ...stubVariations(), attempts, fallback: true, note: 'all imagen models failed' + (errorSummary ? ' – ' + errorSummary : '') }, 200);
+
+    const errorSummary = attempts
+      .filter((a: any) => a.ok === false && a.error)
+      .map((a: any) => `${a.model || a.stage || 'stage'}:${a.error}`)
+      .slice(0, 6)
+      .join('; ');
+    return json({ ...stubVariations(), attempts, fallback: true, note: 'vertex attempt failed' + (errorSummary ? ' – ' + errorSummary : '') }, 200);
   } catch (e: any) {
     attempts.push({ ok: false, fatal: true, error: e?.message || 'fatal error' });
     return json({ ...stubVariations(), fallback: true, attempts, note: 'fatal error' }, 200);

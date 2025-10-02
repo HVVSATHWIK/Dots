@@ -35,9 +35,12 @@ The platform now supports foundational multimodal capabilities (text + image + T
 | Endpoint | Method | Purpose | Notes |
 |----------|--------|---------|-------|
 | `/api/ai/image-generate` | POST | Generate 1–3 product concept images | Fallback returns placeholder 1x1 PNGs if no API key or all models fail. Respects feature flag `aiImageGen`. Rate limited per IP. |
+| `/api/ai/design-variations` | POST | Produce 3–4 motif-preserving variations from a base image | Calls Vertex Imagen variation models (default `imagen-3.0-vary-002`) using service-account OAuth. Configure credentials via `VERTEX_SERVICE_ACCOUNT_JSON`, `GOOGLE_APPLICATION_CREDENTIALS`, or `VERTEX_ACCESS_TOKEN`. |
 | `/api/ai/tts` | POST | Text-to-speech synthesis | Fallback returns base64 encoded plain text stub (mime `text/plain`). Flag: `aiTTS`. Rate limited per IP. |
 | `/api/ai/generate-stream` | POST (SSE) | Streaming text completion | Multi-model routing + fallback streaming tokens. |
 | `/api/ai/metrics` | GET | Runtime counters & cache/meta snapshot | Requires `x-metrics-token` header matching `METRICS_TOKEN` env. |
+
+`VERTEX_VARIATION_MODEL` (optional) lets you pick a specific Imagen variation model; falls back to `imagen-3.0-vary-002` when unset.
 
 ### Input Limits
 - Image prompt max length: 4000 chars.
