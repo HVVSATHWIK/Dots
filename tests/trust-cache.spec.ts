@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { getLatestTrustScoreMap } from '@/lib/embeddings';
-import type { Listing } from '@/entities/schemas';
 
 // Mock Firebase to prevent connection issues during tests
 vi.mock('@/integrations/members/firebase', () => ({

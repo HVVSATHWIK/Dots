@@ -9,6 +9,7 @@ function normalizeModelName(name: string | undefined): string | undefined {
 import { publish } from '@/lib/event-bus';
 import { incr, METRIC } from '@/lib/metrics';
 import { fallbackGenerate } from '@/services/assistant/fallback';
+import { DOTS_ASSISTANT_SYSTEM_PROMPT } from '@/services/assistant/system-prompt';
 
 export const prerender = false;
 
@@ -34,7 +35,7 @@ export const POST: APIRoute = async ({ request }) => {
   const providedRaw = model || (import.meta.env.GEMINI_MODEL as string | undefined) || (process.env.GEMINI_MODEL as string | undefined);
     // Updated list aligned with your /api/ai/models output (preferring 2.5 flash tiers, then 2.0, then legacy fallbacks)
   const { candidates, override, cached } = selectModels('generate', { forceModel: providedRaw });
-    const baseSystem = system || 'You are a helpful assistant.';
+  const baseSystem = system || DOTS_ASSISTANT_SYSTEM_PROMPT;
     const attempts: { model: string; ok: boolean; error?: string }[] = [];
     let lastErr: any;
     for (const candidate of candidates) {

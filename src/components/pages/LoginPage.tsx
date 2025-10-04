@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { getFirebaseAuth } from '@/integrations/members/firebase';
+import { getFirebaseAuth, getDb } from '@/integrations/members/firebase';
 import { browserLocalPersistence, browserSessionPersistence, setPersistence, signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { useMember } from '@/integrations';
 import { useToast } from '@/hooks/use-toast';
 import { Eye, EyeOff, Loader2, LogIn, Mail, X } from 'lucide-react';
@@ -36,6 +37,7 @@ export default function LoginPage() {
   const nav = useNavigate();
   const [searchParams] = useSearchParams();
   const next = searchParams.get('next') || '/dashboard';
+  const hasNextParam = searchParams.has('next');
   const { actions } = useMember();
   const { toast } = useToast();
   
@@ -78,6 +80,55 @@ export default function LoginPage() {
     }
   };
 
+  const resolvePostLoginRedirect = React.useCallback(async (explicitNext: string | null) => {
+    try {
+      const auth = getFirebaseAuth();
+      const user = auth.currentUser;
+      if (!user) return explicitNext || '/dashboard';
+
+      const db = getDb();
+      const ref = doc(db, 'users', user.uid);
+      const snap = await getDoc(ref);
+
+      let resolvedRole: 'buyer' | 'artisan' | 'admin' = 'buyer';
+      let profileComplete = false;
+
+      if (snap.exists()) {
+        const data = snap.data() as any;
+        resolvedRole = (data?.role as any) || 'buyer';
+        profileComplete = !!data?.profileComplete;
+      } else {
+        await setDoc(ref, {
+          email: user.email || '',
+          name: user.displayName || '',
+          role: resolvedRole,
+          joinedOn: serverTimestamp(),
+          profileComplete: false,
+          metadata: { provider: user.providerData?.[0]?.providerId || 'password', lastLogin: serverTimestamp() },
+        }, { merge: true });
+      }
+
+      sessionStorage.setItem('dots_role', resolvedRole);
+      sessionStorage.setItem('dots_role_chosen', '1');
+      sessionStorage.setItem('dots_profile_complete', profileComplete ? '1' : '0');
+
+      if (explicitNext) return explicitNext;
+
+      if (resolvedRole === 'artisan') {
+        return profileComplete ? '/artisan/dashboard' : '/profile/setup';
+      }
+
+      if (resolvedRole === 'admin') {
+        return '/admin/dashboard';
+      }
+
+      return '/buyer/dashboard';
+    } catch (error) {
+      console.warn('[auth] Failed to resolve post-login redirect:', error);
+      return explicitNext || '/dashboard';
+    }
+  }, []);
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -97,13 +148,14 @@ export default function LoginPage() {
       const auth = getFirebaseAuth();
       await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
       await signInWithEmailAndPassword(auth, formData.email, formData.password);
-      
+
       toast({
         title: "Welcome back!",
         description: "You've successfully signed in to DOTS.",
       });
-      
-      nav(next, { replace: true });
+
+      const redirectTarget = await resolvePostLoginRedirect(hasNextParam ? next : null);
+      nav(redirectTarget, { replace: true });
     } catch (e: any) {
       const errorMessage = mapError(e);
       setErrors({ submit: errorMessage });
@@ -127,7 +179,8 @@ export default function LoginPage() {
         title: "Welcome back!",
         description: "You've successfully signed in with Google.",
       });
-      nav(next, { replace: true });
+      const redirectTarget = await resolvePostLoginRedirect(hasNextParam ? next : null);
+      nav(redirectTarget, { replace: true });
     } catch (e: any) {
       const errorMessage = 'Google sign-in failed. Please try again or use email sign-in.';
       setErrors({ submit: errorMessage });

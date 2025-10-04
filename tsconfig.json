@@ -8,8 +8,7 @@
   "types": ["vite/client", "astro/client"],
     "jsx": "react-jsx",
     "jsxImportSource": "react",
-    "rootDir": ".",
-    "baseUrl": ".",
+  "rootDir": ".",
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noImplicitReturns": false,
@@ -23,20 +22,20 @@
     "exactOptionalPropertyTypes": false,
     "paths": {
       "@/*": [
-        "src/*"
+        "./src/*"
       ],
       "@/components/*": [
-        "src/components/*"
+        "./src/components/*"
       ],
       "@/integrations/*": [
-        "integrations/*",
+        "./integrations/*"
       ],
       "@/integrations": [
-        "integrations"
+        "./integrations"
       ],
       "@wix/codegen-framework-packages": [
-        "integrations"
-      ],
+        "./integrations"
+      ]
     }
   },
   "include": [

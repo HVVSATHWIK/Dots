@@ -9,6 +9,7 @@ function normalizeModelName(name: string | undefined): string | undefined {
 import { publish } from '@/lib/event-bus';
 import { incr, METRIC } from '@/lib/metrics';
 import { classifyFallbackIntent } from '@/services/assistant/fallback';
+import { DOTS_ASSISTANT_SYSTEM_PROMPT } from '@/services/assistant/system-prompt';
 
 export const prerender = false;
 
@@ -22,15 +23,7 @@ export const POST: APIRoute = async ({ request }) => {
 		const { messages, model } = await request.json();
 
 		// DOTS-wide assistant system prompt
-		const systemPrompt = `
-You are the DOTS Assistant.
-- Be friendly, concise, and helpful.
-- Support both artisans and buyers using the DOTS platform.
-- Help with artisan products, creative ideas, and platform guidance.
-- Suggest tags, titles, descriptions, pricing ranges, and materials when asked.
-- If asked about something outside DOTS, answer politely but briefly.
-- Keep responses supportive, approachable, and easy to act on.
-`;
+		const systemPrompt = DOTS_ASSISTANT_SYSTEM_PROMPT;
 
 		// Ensure system prompt is always included as the first message
 		const incoming: ChatMessage[] = (messages as ChatMessage[]) ?? [];
